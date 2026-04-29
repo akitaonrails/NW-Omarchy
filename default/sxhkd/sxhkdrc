@@ -158,12 +158,12 @@ super + shift + Up
 super + shift + Down
     bspc node -s south
 
-#─── workspaces (1-9, 0 → 10) ─────────────────────────────────────────
-super + {1-9,0}
-    bspc desktop -f {1-9,10}
+#─── workspaces (1-5, parity with omarchy waybar) ──────────────────────
+super + {1-5}
+    bspc desktop -f {1-5}
 
-super + shift + {1-9,0}
-    bspc node -d {1-9,10} --follow
+super + shift + {1-5}
+    bspc node -d {1-5} --follow
 
 #─── workspace cycling ────────────────────────────────────────────────
 super + Tab

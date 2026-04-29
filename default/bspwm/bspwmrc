@@ -13,7 +13,8 @@ PATH="$HOME/.local/share/nw-omarchy/bin:$HOME/.local/share/omarchy/bin:$PATH"
 export PATH
 
 #─── monitors / desktops ──────────────────────────────────────────────
-bspc monitor -d 1 2 3 4 5 6 7 8 9 10
+# 5 workspaces — parity with omarchy waybar's persistent-workspaces.
+bspc monitor -d 1 2 3 4 5
 
 #─── window layout (Hyprland-ish: tight gaps, thin border, dwindle-feel) ──
 bspc config border_width            2
