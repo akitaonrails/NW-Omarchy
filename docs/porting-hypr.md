@@ -82,6 +82,19 @@ App launchers route through `nw-omarchy-launch-*` / `nw-omarchy-cmd-*` helpers i
 | `SHIFT + Print` → fullscreen | `shift + Print` → `nw-omarchy-cmd-screenshot fullscreen` |
 | `SUPER + ,` → dismiss notification | **TODO** — `dunstctl close` |
 
+### Clipboard
+
+Mirrors `omarchy/default/hypr/bindings/clipboard.conf` plus its `super + ctrl + v` clipboard-manager binding. Hyprland synthesises the key-syms with `sendshortcut`; on X11 we use `xdotool key --clearmodifiers`, which releases the still-held super before injecting the fake press so apps see a clean `ctrl+Insert` / `shift+Insert` / `ctrl+x`.
+
+| Hyprland | sxhkd | substitute |
+|---|---|---|
+| `SUPER + C` → universal copy | `super + c` | `xdotool key --clearmodifiers ctrl+Insert` |
+| `SUPER + V` → universal paste | `super + v` | `xdotool key --clearmodifiers shift+Insert` |
+| `SUPER + X` → universal cut | `super + x` | `xdotool key --clearmodifiers ctrl+x` |
+| `SUPER + CTRL + V` → walker `-m clipboard` | `super + ctrl + v` | `clipmenu` (rofi-backed; `CM_LAUNCHER=rofi` set in bspwmrc) |
+
+History is captured by `clipmenud` (autostarted from bspwmrc) via `clipnotify` + `xsel`. Caveat: in terminals, `shift+Insert` pastes from PRIMARY (X mouse selection) rather than CLIPBOARD; if you want full parity inside terminals, bind `shift+Insert → CLIPBOARD` in your terminal's keybindings.
+
 ### Multimedia keys
 
 All native via `pactl`, `brightnessctl`, `playerctl` (in package list). No omarchy helpers needed; works the same on X11.

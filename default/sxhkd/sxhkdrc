@@ -98,6 +98,27 @@ super + ctrl + e
 super + k
     rofi -show keys
 
+#─── universal copy / paste / cut (parity with omarchy clipboard.conf) ─
+# Hyprland uses `sendshortcut`. On X11 we synthesise the key-syms with
+# xdotool. --clearmodifiers releases super (still held by the user) before
+# the synthetic press, so apps see a clean ctrl+Insert / shift+Insert / ctrl+x
+# instead of super+ctrl+Insert.
+# Caveat: in terminals shift+Insert pastes from PRIMARY (X selection),
+# not CLIPBOARD. Configure your terminal to bind shift+Insert → CLIPBOARD
+# if you want full parity inside terminals.
+super + c
+    xdotool key --clearmodifiers ctrl+Insert
+
+super + v
+    xdotool key --clearmodifiers shift+Insert
+
+super + x
+    xdotool key --clearmodifiers ctrl+x
+
+#─── clipboard history (rofi-backed; CM_LAUNCHER=rofi set in bspwmrc) ──
+super + ctrl + v
+    clipmenu
+
 #─── window control ───────────────────────────────────────────────────
 super + w
     bspc node -c

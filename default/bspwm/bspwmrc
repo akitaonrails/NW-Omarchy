@@ -50,6 +50,11 @@ pkill -x picom              >/dev/null 2>&1; sleep 0.05
 pkill -x dunst              >/dev/null 2>&1; sleep 0.05
 pkill -x polybar            >/dev/null 2>&1; sleep 0.05
 pkill -x libinput-gestures  >/dev/null 2>&1; sleep 0.05
+pkill -x clipmenud          >/dev/null 2>&1; sleep 0.05
+
+# Tell clipmenu (and its picker) to use rofi instead of dmenu. CM_LAUNCHER is
+# inherited by clipmenud's children (the picker), so set it once here.
+export CM_LAUNCHER=rofi
 
 # wallpaper — prefer omarchy's active theme background, then fall back.
 NW_BG="$HOME/.config/omarchy/current/background"
@@ -82,6 +87,11 @@ fi
 # Requires user in 'input' group; install/gestures.sh checks and warns.
 if command -v libinput-gestures >/dev/null 2>&1; then
     libinput-gestures >/dev/null 2>&1 &
+fi
+
+# clipboard history daemon (clipnotify-based; serves the super+ctrl+v picker).
+if command -v clipmenud >/dev/null 2>&1; then
+    clipmenud >/dev/null 2>&1 &
 fi
 
 # notifications

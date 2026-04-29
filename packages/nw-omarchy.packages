@@ -18,9 +18,10 @@ dunst
 # --- Lock screen / wallpaper / utilities ---
 i3lock-color         (aur)
 feh
-xdotool                 # active-window pid → terminal cwd
+xdotool                 # active-window pid → terminal cwd; key-sym injection for universal copy/paste
 xclip                   # screenshot/clipboard plumbing
 wmctrl                  # window-list / focus-by-class for launch-or-focus
+clipmenu                # clipboard history — pulls dmenu, xsel, clipnotify, xdotool
 xss-lock
 maim                 # screenshots
 slop                 # region selector for maim
