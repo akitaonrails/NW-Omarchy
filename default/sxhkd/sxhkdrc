@@ -3,49 +3,90 @@
 #
 # super = Mod4 (Win key). The user file ~/.config/sxhkd/sxhkdrc is loaded
 # AFTER this one and overrides on conflict.
+#
+# App launchers route through nw-omarchy-launch-* / -cmd-* helpers in
+# ~/.local/share/nw-omarchy/bin (added to PATH by bspwmrc). These are X11
+# ports of the omarchy-launch-* helpers in your hypr config — they share
+# behaviour (default browser, focus-or-launch, --app= webapps, etc.) but
+# use wmctrl/xdotool instead of hyprctl.
 
 #─── apps ─────────────────────────────────────────────────────────────
+# Open terminal in the focused window's cwd if it's a terminal, else $HOME.
 super + Return
-    alacritty
+    sh -c 'alacritty --working-directory "$(nw-omarchy-cmd-terminal-cwd)"'
 
 super + alt + Return
     alacritty -e bash -c "tmux attach || tmux new -s Work"
 
 super + shift + Return
-    brave
+    nw-omarchy-launch-browser
 
 super + b
-    brave
+    nw-omarchy-launch-browser
 
 super + shift + b
-    brave
+    nw-omarchy-launch-browser
 
 super + shift + alt + b
-    brave --incognito
+    nw-omarchy-launch-browser --private
 
 super + shift + f
-    nautilus --new-window
+    nw-omarchy-launch-or-focus nautilus "nautilus --new-window"
+
+super + shift + alt + f
+    sh -c 'nautilus --new-window "$(nw-omarchy-cmd-terminal-cwd)"'
 
 super + shift + n
-    alacritty -e nvim
+    nw-omarchy-launch-editor
 
 super + shift + d
-    alacritty -e lazydocker
+    nw-omarchy-launch-tui lazydocker
 
 super + shift + m
-    sh -c 'pgrep -x spotify >/dev/null && wmctrl -x -a spotify || spotify'
+    nw-omarchy-launch-or-focus spotify
 
 super + shift + g
-    signal-desktop
+    nw-omarchy-launch-or-focus signal-desktop
 
 super + shift + o
-    obsidian
+    nw-omarchy-launch-or-focus obsidian "obsidian --disable-gpu"
 
 super + shift + w
     typora
 
 super + shift + slash
     1password
+
+#─── webapp bindings (Chrome --app= windows; parity with hypr) ────────
+super + shift + a
+    nw-omarchy-launch-webapp "https://chatgpt.com"
+
+super + shift + alt + a
+    nw-omarchy-launch-webapp "https://grok.com"
+
+super + shift + c
+    nw-omarchy-launch-webapp "https://app.hey.com/calendar/weeks/"
+
+super + shift + e
+    nw-omarchy-launch-webapp "https://app.hey.com"
+
+super + shift + y
+    nw-omarchy-launch-webapp "https://youtube.com/"
+
+super + shift + alt + g
+    nw-omarchy-launch-or-focus-webapp WhatsApp "https://web.whatsapp.com/"
+
+super + shift + ctrl + g
+    nw-omarchy-launch-or-focus-webapp "Google Messages" "https://messages.google.com/web/conversations"
+
+super + shift + p
+    nw-omarchy-launch-or-focus-webapp "Google Photos" "https://photos.google.com/"
+
+super + shift + x
+    nw-omarchy-launch-webapp "https://x.com/"
+
+super + shift + alt + x
+    nw-omarchy-launch-webapp "https://x.com/compose/post"
 
 #─── menus / launcher ─────────────────────────────────────────────────
 super + space
@@ -129,10 +170,13 @@ super + shift + equal
 
 #─── screenshots ──────────────────────────────────────────────────────
 Print
-    sh -c 'maim --select | xclip -selection clipboard -t image/png'
+    nw-omarchy-cmd-screenshot region
+
+shift + Print
+    nw-omarchy-cmd-screenshot fullscreen
 
 alt + Print
-    sh -c 'mkdir -p "$HOME/Pictures" && maim --select "$HOME/Pictures/$(date +%Y%m%d-%H%M%S).png"'
+    nw-omarchy-cmd-screenshot region
 
 #─── system / aesthetics ──────────────────────────────────────────────
 super + l

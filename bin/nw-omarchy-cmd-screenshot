@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# X11 screenshot helper, parity surface with omarchy-cmd-screenshot but built
+# on maim + slop + xclip. Saves to $OMARCHY_SCREENSHOT_DIR / $XDG_PICTURES_DIR
+# / ~/Pictures.
+#
+# Usage:  nw-omarchy-cmd-screenshot [region|fullscreen|smart]
+#
+# `smart` and `region` both use a maim+slop interactive selection. We don't
+# emulate the Wayland version's auto-snap-to-window-when-tiny logic — bspwm
+# users can just press the binding twice if they misclick.
+
+set -e
+
+# Toggle: a running slop indicates a previous invocation is still selecting;
+# kill it and exit so the same binding cancels the action.
+if pgrep -x slop >/dev/null; then
+    pkill -x slop || true
+    exit 0
+fi
+
+[ -f ~/.config/user-dirs.dirs ] && . ~/.config/user-dirs.dirs
+OUTPUT_DIR="${OMARCHY_SCREENSHOT_DIR:-${XDG_PICTURES_DIR:-$HOME/Pictures}}"
+mkdir -p "$OUTPUT_DIR"
+
+MODE="${1:-smart}"
+
+FILENAME="screenshot-$(date +'%Y-%m-%d_%H-%M-%S').png"
+FILEPATH="$OUTPUT_DIR/$FILENAME"
+
+case "$MODE" in
+    region|smart)
+        # `maim --select` cancels on Esc with non-zero exit; treat as no-op.
+        maim --select "$FILEPATH" 2>/dev/null || exit 0
+        ;;
+    fullscreen)
+        maim "$FILEPATH"
+        ;;
+    *)
+        echo "unknown mode: $MODE (region|fullscreen|smart)" >&2
+        exit 1
+        ;;
+esac
+
+[ -s "$FILEPATH" ] || exit 0
+
+# Copy to clipboard for paste-into-chat-app workflows.
+if command -v xclip >/dev/null 2>&1; then
+    xclip -selection clipboard -t image/png -i <"$FILEPATH"
+fi
+
+if command -v notify-send >/dev/null 2>&1; then
+    notify-send "Screenshot saved" "$FILEPATH" -t 4000 -i "$FILEPATH" >/dev/null 2>&1 || true
+fi

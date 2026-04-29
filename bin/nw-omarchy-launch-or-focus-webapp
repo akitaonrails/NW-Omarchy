@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# X11 port of omarchy-launch-or-focus-webapp. Composes launch-or-focus with
+# launch-webapp so a single Chromium-class window per URL stays around.
+#
+#   nw-omarchy-launch-or-focus-webapp <window-pattern> <url> [extra-args...]
+
+set -e
+[ "$#" -ge 2 ] || { echo "usage: $(basename "$0") <window-pattern> <url> [extras...]" >&2; exit 1; }
+
+PATTERN="$1"; shift
+exec nw-omarchy-launch-or-focus "$PATTERN" "nw-omarchy-launch-webapp $*"

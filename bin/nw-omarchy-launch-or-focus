@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# X11 port of omarchy-launch-or-focus. Substring-matches WM_CLASS or window
+# title against the pattern (case-insensitive); if a window matches, focuses
+# it; otherwise runs the launch command.
+#
+#   nw-omarchy-launch-or-focus <window-pattern> [launch-cmd]
+#
+# When launch-cmd is omitted we fall back to the pattern itself (matches
+# omarchy's default — useful when class==binary, e.g. spotify, signal-desktop).
+
+set -e
+
+[ "$#" -ge 1 ] || { echo "usage: $(basename "$0") <window-pattern> [launch-cmd]" >&2; exit 1; }
+
+PATTERN="$1"
+LAUNCH_CMD="${2:-$PATTERN}"
+
+if ! command -v wmctrl >/dev/null 2>&1; then
+    echo "wmctrl not installed — install it for window-focus support" >&2
+    exec setsid sh -c "$LAUNCH_CMD"
+fi
+
+# wmctrl -lx columns: WID DESKTOP CLASS HOST TITLE...
+# Match pattern against CLASS or TITLE substrings, case-insensitive.
+shopt -s nocasematch
+match_id=""
+while IFS= read -r line; do
+    wid=$(awk '{print $1}' <<<"$line")
+    class=$(awk '{print $3}' <<<"$line")
+    title=$(cut -d' ' -f5- <<<"$line")
+    if [[ "$class" == *"$PATTERN"* ]] || [[ "$title" == *"$PATTERN"* ]]; then
+        match_id="$wid"
+        break
+    fi
+done < <(wmctrl -lx 2>/dev/null)
+
+if [ -n "$match_id" ]; then
+    exec wmctrl -i -a "$match_id"
+else
+    exec setsid sh -c "$LAUNCH_CMD"
+fi

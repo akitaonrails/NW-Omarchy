@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# X11 port of omarchy-launch-editor. Opens $EDITOR (default nvim);
+# TUI editors get wrapped in alacritty.
+
+set -e
+
+EDITOR="${EDITOR:-nvim}"
+command -v "$EDITOR" >/dev/null 2>&1 || EDITOR=nvim
+
+case "$EDITOR" in
+    nvim|vim|nano|micro|hx|helix|fresh)
+        exec nw-omarchy-launch-tui "$EDITOR" "$@"
+        ;;
+    *)
+        exec setsid "$EDITOR" "$@"
+        ;;
+esac

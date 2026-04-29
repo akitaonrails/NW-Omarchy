@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# X11 port of omarchy-launch-tui. Opens a TUI command in alacritty.
+# Sets WM_CLASS to org.nw-omarchy.<cmd> so picom/window rules can match.
+#
+#   nw-omarchy-launch-tui <cmd> [args...]
+
+set -e
+[ "$#" -ge 1 ] || { echo "usage: $(basename "$0") <cmd> [args...]" >&2; exit 1; }
+
+CMD="$1"; shift
+exec setsid alacritty --class "org.nw-omarchy.$CMD" -e "$CMD" "$@"

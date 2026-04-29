@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# X11 port of omarchy-cmd-terminal-cwd. Prints the cwd of the focused
+# terminal's child shell process. Falls back to $HOME on any failure so
+# callers like `alacritty --working-directory "$(...)"` always get a usable
+# path.
+
+set -e
+
+terminal_pid=$(xdotool getactivewindow getwindowpid 2>/dev/null) || { echo "$HOME"; exit 0; }
+[ -z "$terminal_pid" ] && { echo "$HOME"; exit 0; }
+
+shell_pid=$(pgrep -P "$terminal_pid" | tail -n1)
+[ -z "$shell_pid" ] && { echo "$HOME"; exit 0; }
+
+cwd=$(readlink -f "/proc/$shell_pid/cwd" 2>/dev/null || true)
+shell=$(readlink -f "/proc/$shell_pid/exe" 2>/dev/null || true)
+
+if [ -n "$cwd" ] && [ -d "$cwd" ] && grep -qsF "$shell" /etc/shells; then
+    echo "$cwd"
+else
+    echo "$HOME"
+fi

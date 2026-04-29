@@ -17,8 +17,9 @@ dunst
 # --- Lock screen / wallpaper / utilities ---
 i3lock-color         (aur)
 feh
-xdotool
-xclip
+xdotool                 # active-window pid → terminal cwd
+xclip                   # screenshot/clipboard plumbing
+wmctrl                  # window-list / focus-by-class for launch-or-focus
 xss-lock
 maim                 # screenshots
 slop                 # region selector for maim

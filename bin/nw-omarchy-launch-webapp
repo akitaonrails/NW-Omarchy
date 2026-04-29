@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# X11 port of omarchy-launch-webapp. Launches a URL as a Chromium-class
+# `--app=` window in the user's default browser; falls back to chromium
+# if the default is not Chromium-based.
+
+set -e
+[ "$#" -ge 1 ] || { echo "usage: $(basename "$0") <url> [extra-args...]" >&2; exit 1; }
+
+URL="$1"; shift
+
+browser=$(xdg-settings get default-web-browser 2>/dev/null || true)
+case "$browser" in
+    google-chrome*|brave*|microsoft-edge*|opera*|vivaldi*|helium*) ;;
+    *) browser="chromium.desktop" ;;
+esac
+
+browser_exec=$(sed -n 's/^Exec=\([^ ]*\).*/\1/p' \
+    {"$HOME"/.local,"$HOME"/.nix-profile,/usr}/share/applications/"$browser" \
+    2>/dev/null | head -1)
+
+[ -z "$browser_exec" ] && { echo "no chromium-class browser found" >&2; exit 1; }
+
+exec setsid "$browser_exec" --app="$URL" "$@"

@@ -5,6 +5,13 @@
 
 NW_DEFAULT="$HOME/.local/share/nw-omarchy/default"
 
+# sxhkd does NOT source .bashrc, so the omarchy + nw-omarchy bin dirs that
+# .bashrc puts on PATH for interactive shells aren't visible here. Add them
+# explicitly so sxhkd-spawned bindings can reach `nw-omarchy-launch-*`,
+# `omarchy-cmd-*`, etc.
+PATH="$HOME/.local/share/nw-omarchy/bin:$HOME/.local/share/omarchy/bin:$PATH"
+export PATH
+
 #─── monitors / desktops ──────────────────────────────────────────────
 bspc monitor -d 1 2 3 4 5 6 7 8 9 10
 
