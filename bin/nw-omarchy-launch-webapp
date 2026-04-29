@@ -20,4 +20,9 @@ browser_exec=$(sed -n 's/^Exec=\([^ ]*\).*/\1/p' \
 
 [ -z "$browser_exec" ] && { echo "no chromium-class browser found" >&2; exit 1; }
 
-exec setsid "$browser_exec" --app="$URL" "$@"
+# Override brave/chromium-flags.conf's --ozone-platform=wayland inside X11.
+# See nw-omarchy-launch-browser for the same dance + reasoning.
+ozone_arg=()
+[ "${XDG_SESSION_TYPE:-}" = "x11" ] && ozone_arg=(--ozone-platform=x11)
+
+exec setsid "$browser_exec" "${ozone_arg[@]}" --app="$URL" "$@"

@@ -30,4 +30,14 @@ for a in "$@"; do
     args+=("$a")
 done
 
+# Omarchy ships ~/.config/{brave,chromium}-flags.conf with
+# --ozone-platform=wayland hardcoded. Inside an X11 session that kills the
+# browser at startup ("Failed to connect to Wayland display"). Chromium's
+# CLI parser uses last-wins for --ozone-platform, so appending x11 here
+# overrides the conf-file flag without us having to touch the conf file
+# (which is correct for Hyprland — leave it alone).
+if [ "${XDG_SESSION_TYPE:-}" = "x11" ] && [[ "$browser_exec" =~ (brave|chromium|chrome|edge|opera|vivaldi|helium) ]]; then
+    args=(--ozone-platform=x11 "${args[@]}")
+fi
+
 exec setsid "$browser_exec" "${args[@]}"
