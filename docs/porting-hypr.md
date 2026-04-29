@@ -93,7 +93,9 @@ Mirrors `omarchy/default/hypr/bindings/clipboard.conf` plus its `super + ctrl + 
 | `SUPER + X` → universal cut | `super + x` | `xdotool key --clearmodifiers ctrl+x` |
 | `SUPER + CTRL + V` → walker `-m clipboard` | `super + ctrl + v` | `clipmenu` (rofi-backed; `CM_LAUNCHER=rofi` set in bspwmrc) |
 
-History is captured by `clipmenud` (autostarted from bspwmrc) via `clipnotify` + `xsel`. Caveat: in terminals, `shift+Insert` pastes from PRIMARY (X mouse selection) rather than CLIPBOARD; if you want full parity inside terminals, bind `shift+Insert → CLIPBOARD` in your terminal's keybindings.
+History is captured by `clipmenud` (autostarted from bspwmrc) via `clipnotify` + `xsel`.
+
+The `shift+Insert`-pastes-from-PRIMARY trap inside terminals is fixed for alacritty by `install/alacritty.sh`, which appends `default/alacritty/keybindings.toml` to the user's alacritty `general.import`. That overrides `Shift+Insert` to action `Paste` (CLIPBOARD). If you also use kitty / ghostty / wezterm, you'll want to add the equivalent rebind in their config — we don't currently ship overrides for those.
 
 ### Multimedia keys
 

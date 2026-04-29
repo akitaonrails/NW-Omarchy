@@ -1,0 +1,10 @@
+# nw-omarchy alacritty overrides — appended to the user's alacritty general.import.
+# See install/alacritty.sh for the wiring.
+
+# Make Shift+Insert paste from CLIPBOARD (default in alacritty: PRIMARY).
+# This matches the universal-paste binding (super + v → shift+Insert) so what
+# you `super+c`'d from a browser actually pastes inside the terminal.
+[[keyboard.bindings]]
+key = "Insert"
+mods = "Shift"
+action = "Paste"

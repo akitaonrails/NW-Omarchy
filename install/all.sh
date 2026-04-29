@@ -22,6 +22,7 @@ step sddm-picker
 step config
 step themed
 step gestures
+step alacritty
 
 echo
 echo "==> nw-omarchy: install pipeline complete"
