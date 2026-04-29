@@ -6,21 +6,39 @@ The user's Hyprland config (omarchy default + personal overrides) → sxhkd, wit
 
 ### Apps
 
+App launchers route through `nw-omarchy-launch-*` / `nw-omarchy-cmd-*` helpers in `bin/` — X11 ports of the omarchy helpers, built on `wmctrl` + `xdotool` instead of `hyprctl`. PATH for these is set up in `bspwmrc` (sxhkd doesn't source `.bashrc`).
+
 | Hyprland | sxhkd | substitute |
 |---|---|---|
-| `SUPER + RETURN` → terminal | `super + Return` | `alacritty` direct (no `xdg-terminal-exec` on X11 yet) |
+| `SUPER + RETURN` → terminal | `super + Return` | `alacritty --working-directory "$(nw-omarchy-cmd-terminal-cwd)"` |
 | `SUPER + ALT + RETURN` → tmux | `super + alt + Return` | `alacritty -e bash -c "tmux attach || tmux new -s Work"` |
-| `SUPER + SHIFT + RETURN` → browser | `super + shift + Return` | `brave` direct (no `omarchy-launch-browser`) |
-| `SUPER + B`, `SUPER + SHIFT + B` → brave | both → `brave` | same |
-| `SUPER + SHIFT + ALT + B` → brave private | `super + shift + alt + b` | `brave --incognito` |
-| `SUPER + SHIFT + F` → nautilus | `super + shift + f` | `nautilus --new-window` |
-| `SUPER + SHIFT + N` → editor | `super + shift + n` | `alacritty -e nvim` |
-| `SUPER + SHIFT + D` → lazydocker | `super + shift + d` | `alacritty -e lazydocker` |
-| `SUPER + SHIFT + M` → spotify | `super + shift + m` | wmctrl-focus or launch |
-| `SUPER + SHIFT + G` → signal | `super + shift + g` | `signal-desktop` |
-| `SUPER + SHIFT + O` → obsidian | `super + shift + o` | `obsidian` |
+| `SUPER + SHIFT + RETURN` → browser | `super + shift + Return` | `nw-omarchy-launch-browser` |
+| `SUPER + B`, `SUPER + SHIFT + B` → brave | both → `nw-omarchy-launch-browser` | same |
+| `SUPER + SHIFT + ALT + B` → brave private | `super + shift + alt + b` | `nw-omarchy-launch-browser --private` (translates to per-browser flag) |
+| `SUPER + SHIFT + F` → nautilus | `super + shift + f` | `nw-omarchy-launch-or-focus nautilus "nautilus --new-window"` |
+| `SUPER + SHIFT + ALT + F` → nautilus (cwd) | `super + shift + alt + f` | `nautilus --new-window "$(nw-omarchy-cmd-terminal-cwd)"` |
+| `SUPER + SHIFT + N` → editor | `super + shift + n` | `nw-omarchy-launch-editor` (TUI editors wrapped in alacritty) |
+| `SUPER + SHIFT + D` → lazydocker | `super + shift + d` | `nw-omarchy-launch-tui lazydocker` |
+| `SUPER + SHIFT + M` → spotify | `super + shift + m` | `nw-omarchy-launch-or-focus spotify` |
+| `SUPER + SHIFT + G` → signal | `super + shift + g` | `nw-omarchy-launch-or-focus signal-desktop` |
+| `SUPER + SHIFT + O` → obsidian | `super + shift + o` | `nw-omarchy-launch-or-focus obsidian "obsidian --disable-gpu"` |
 | `SUPER + SHIFT + W` → typora | `super + shift + w` | `typora` |
 | `SUPER + SHIFT + /` → 1password | `super + shift + slash` | `1password` |
+
+### Webapps (Chrome `--app=` windows)
+
+| Hyprland | sxhkd | substitute |
+|---|---|---|
+| `SUPER + SHIFT + A` → ChatGPT | same | `nw-omarchy-launch-webapp "https://chatgpt.com"` |
+| `SUPER + SHIFT + ALT + A` → Grok | same | `nw-omarchy-launch-webapp "https://grok.com"` |
+| `SUPER + SHIFT + C` → Calendar | same | `nw-omarchy-launch-webapp "https://app.hey.com/calendar/weeks/"` |
+| `SUPER + SHIFT + E` → Email | same | `nw-omarchy-launch-webapp "https://app.hey.com"` |
+| `SUPER + SHIFT + Y` → YouTube | same | `nw-omarchy-launch-webapp "https://youtube.com/"` |
+| `SUPER + SHIFT + ALT + G` → WhatsApp | same | `nw-omarchy-launch-or-focus-webapp WhatsApp "https://web.whatsapp.com/"` |
+| `SUPER + SHIFT + CTRL + G` → Google Messages | same | `nw-omarchy-launch-or-focus-webapp "Google Messages" "https://messages.google.com/web/conversations"` |
+| `SUPER + SHIFT + P` → Google Photos | same | `nw-omarchy-launch-or-focus-webapp "Google Photos" "https://photos.google.com/"` |
+| `SUPER + SHIFT + X` → X.com | same | `nw-omarchy-launch-webapp "https://x.com/"` |
+| `SUPER + SHIFT + ALT + X` → X compose | same | `nw-omarchy-launch-webapp "https://x.com/compose/post"` |
 
 ### Tiling / windows
 
@@ -60,7 +78,8 @@ The user's Hyprland config (omarchy default + personal overrides) → sxhkd, wit
 | `SUPER + BACKSPACE` → toggle window transparency | not ported (picom rule-based, not toggle-based) |
 | `SUPER + SHIFT + BACKSPACE` → toggle gaps | `super + BackSpace` → toggles current desktop's gap |
 | `SUPER + SHIFT + SPACE` → toggle waybar | **TODO** — polybar equivalent: `polybar-msg cmd toggle` |
-| Print → screenshot | `Print` → `maim --select | xclip` |
+| Print → screenshot | `Print` → `nw-omarchy-cmd-screenshot region` (maim+slop+xclip+notify-send) |
+| `SHIFT + Print` → fullscreen | `shift + Print` → `nw-omarchy-cmd-screenshot fullscreen` |
 | `SUPER + ,` → dismiss notification | **TODO** — `dunstctl close` |
 
 ### Multimedia keys
@@ -69,33 +88,52 @@ All native via `pactl`, `brightnessctl`, `playerctl` (in package list). No omarc
 
 ## Omarchy helper status
 
-Omarchy ships ~80 `omarchy-*` scripts in `~/.local/share/omarchy/bin/`. Many are pure shell and work on X11; others assume Wayland tools.
+Omarchy ships ~80 `omarchy-*` scripts in `~/.local/share/omarchy/bin/`. The
+launchers used by hypr bindings reach into `hyprctl` for window state, so on
+X11 we ship our own ports with the same surface but `wmctrl` + `xdotool`
+underneath.
 
-### Likely portable (no Wayland deps; reuse)
+### Ported in this repo
 
+| omarchy helper (Wayland) | nw-omarchy port (X11) | implementation |
+|---|---|---|
+| `omarchy-launch-browser` | `nw-omarchy-launch-browser` | `xdg-settings` + per-browser private flag |
+| `omarchy-launch-or-focus` | `nw-omarchy-launch-or-focus` | `wmctrl -lx` substring match on class/title, then `wmctrl -i -a` to focus |
+| `omarchy-launch-webapp` | `nw-omarchy-launch-webapp` | resolves Chromium-class browser, runs `--app=<url>` |
+| `omarchy-launch-or-focus-webapp` | `nw-omarchy-launch-or-focus-webapp` | composes the two above |
+| `omarchy-launch-tui` | `nw-omarchy-launch-tui` | `alacritty --class org.nw-omarchy.<cmd> -e <cmd>` |
+| `omarchy-launch-editor` | `nw-omarchy-launch-editor` | `$EDITOR`-aware; TUI editors wrapped in `nw-omarchy-launch-tui` |
+| `omarchy-cmd-terminal-cwd` | `nw-omarchy-cmd-terminal-cwd` | `xdotool getactivewindow getwindowpid` → child shell `/proc/<pid>/cwd` |
+| `omarchy-cmd-screenshot` | `nw-omarchy-cmd-screenshot` | `maim+slop+xclip+notify-send`; modes `region|fullscreen|smart` |
+| `omarchy-lock-screen` | `nw-omarchy-lock` | i3lock-color (separate script, predates phase 2) |
+
+The `nw-omarchy-` prefix is deliberate so we don't shadow the omarchy
+originals on PATH. `bspwmrc` puts both `nw-omarchy/bin` and `omarchy/bin`
+on PATH so bindings can reach either.
+
+### Reused as-is from omarchy/bin
+
+These have no Wayland deps and are useful inside our helpers / future
+wrappers — we just call them through:
+
+- `omarchy-cmd-present <cmd>` — `command -v` for multiple commands
 - `omarchy-battery-*` — reads `/sys/class/power_supply/`
-- `omarchy-cmd-terminal-cwd` — reads `/proc/<pid>/cwd`
-- `omarchy-launch-tui` — generic terminal-launching wrapper
-- `omarchy-launch-editor` — same
+- `omarchy-brightness-display` — brightnessctl wrapper
+- `omarchy-cmd-mic-mute-thinkpad` — pactl wrapper
 
-### Wayland-specific (need replacement)
+### Still Wayland-specific (no port yet)
 
-| Helper | Replace with |
+| Helper | Status / replace with |
 |---|---|
-| `omarchy-launch-walker` | `rofi -show drun` |
-| `omarchy-launch-or-focus` | `wmctrl -x -a <class> \|\| <cmd>` |
-| `omarchy-cmd-screenshot` | `maim --select \| xclip` |
-| `omarchy-lock-screen` | `nw-omarchy-lock` (this repo) |
+| `omarchy-launch-walker` | use `rofi -show drun` directly (we don't ship walker) |
 | `omarchy-toggle-waybar` | `polybar-msg cmd toggle` |
-| `omarchy-hyprland-*` | rewrite case-by-case using bspc/wmctrl |
-| `omarchy-swayosd-client` | `pactl` direct, no OSD (or install xob) |
+| `omarchy-hyprland-*` | rewrite case-by-case using `bspc` / `wmctrl` if needed |
+| `omarchy-swayosd-client` | `pactl` direct (no OSD) or install `xob` |
 | `makoctl` | `dunstctl` |
 
 ### Untested but probably fine
 
-- `omarchy-menu` — gum-based, no Wayland deps that I can see
-- `omarchy-cmd-mic-mute-thinkpad` — pactl wrapper
-- `omarchy-brightness-display` — brightnessctl wrapper
+- `omarchy-menu` — gum-based, no obvious Wayland deps
 
 ## What we deliberately did NOT port
 

@@ -88,5 +88,5 @@ Renaming `autologin.conf` to `autologin.conf.disabled` does **not** disable it �
 
 - Hyprland-style **blurry lockscreen background** (`nw-omarchy-lock` is currently a flat color — needs maim+convert+i3lock-color piping)
 - `omarchy-menu` parity (gum-based system menu) — the script may already work on X11; needs testing
-- `omarchy-launch-or-focus` parity for X11 (uses hyprctl on Wayland; needs `wmctrl` / `xdotool` rewrite)
-- Theming: pick up the active omarchy theme and translate its colors into picom + polybar + rofi
+- ~~`omarchy-launch-or-focus` parity for X11~~ — done; `nw-omarchy-launch-or-focus` ships in `bin/` (wmctrl-based). See [porting-hypr.md](porting-hypr.md).
+- ~~Theming: pick up the active omarchy theme and translate its colors into picom + polybar + rofi~~ — done; templates in `default/themed/` regenerate via `omarchy-theme-set-templates`. See [theming.md](theming.md).
