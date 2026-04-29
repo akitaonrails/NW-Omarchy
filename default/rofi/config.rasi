@@ -3,14 +3,15 @@
 
 configuration {
     modi:           "drun,run,window";
-    show-icons:     true;
-    icon-theme:     "Papirus";
-    font:           "JetBrainsMono Nerd Font 11";
-    display-drun:   "  Apps";
-    display-run:    "  Run";
-    display-window: "  Windows";
+    show-icons:     false;
+    font:           "JetBrainsMono Nerd Font 22";
+    display-drun:   "";
+    display-run:    "";
+    display-window: "";
     drun-display-format: "{name}";
     sidebar-mode:   false;
+    // matching: keep substring, fast and forgiving.
+    matching:       "fuzzy";
 }
 
 // Theme palette: rendered from omarchy current theme via
@@ -25,58 +26,54 @@ configuration {
 
 window {
     transparency:     "real";
-    width:            600;
-    border-radius:    8;
+    width:            700;
+    border-radius:    10;
     background-color: @bg;
     location:         center;
-    padding:          10;
+    padding:          16;
 }
 
+// Note: rofi has no native way to hide the listview until the user types
+// (drun pre-populates with every .desktop entry). Practical compromise:
+// big input, small list (4 visible rows max), no icons — visually the
+// input dominates and the list filters in place as you type.
 mainbox {
     children: [ inputbar, listview ];
-    spacing:  10;
+    spacing:  12;
 }
 
 inputbar {
-    padding:           8;
+    padding:           14;
     background-color:  @bg-alt;
-    border-radius:     6;
-    children:          [ prompt, entry ];
-}
-
-prompt {
-    padding:    0 8 0 0;
-    text-color: @primary;
+    border-radius:     8;
+    children:          [ entry ];
 }
 
 entry {
-    placeholder:       "Search…";
+    placeholder:       "type to search";
     placeholder-color: @disabled;
 }
 
 listview {
-    lines:        10;
+    lines:        4;
     columns:      1;
     padding:      0;
     fixed-height: false;
+    dynamic:      true;
     cycle:        true;
     scrollbar:    false;
+    spacing:      4;
 }
 
 element {
-    padding:       6;
+    padding:       10;
     border-radius: 6;
     spacing:       8;
 }
 
 element selected {
     background-color: @selected;
-    text-color:       @fg;
+    text-color:       @selected-fg;
 }
 
-element-icon {
-    size:    1.2em;
-    padding: 0 8 0 0;
-}
-
-element-text { text-color: inherit; }
+element-text { text-color: inherit; vertical-align: 0.5; }
