@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+# nw-omarchy-doctor — read-only health check.
+# Lints packages, manifest, SDDM picker, theme integration, alacritty wiring,
+# session env, and live daemons. No side effects.
+#
+# Exit code: 0 always. Read the output, not the exit status.
+
+set -uo pipefail
+
+NW_OMARCHY_PATH="${NW_OMARCHY_PATH:-$HOME/.local/share/nw-omarchy}"
+NW_OMARCHY_STATE="${NW_OMARCHY_STATE:-$HOME/.local/state/nw-omarchy}"
+
+if [ -t 1 ] && command -v tput >/dev/null 2>&1 && [ "$(tput colors 2>/dev/null || echo 0)" -ge 8 ]; then
+    C_OK="$(tput setaf 2)";   C_BAD="$(tput setaf 1)";   C_INFO="$(tput setaf 3)";   C_DIM="$(tput dim)";   C_RST="$(tput sgr0)"
+else
+    C_OK="";  C_BAD="";  C_INFO="";  C_DIM="";  C_RST=""
+fi
+
+section() { printf '\n%s== %s ==%s\n' "$C_DIM" "$1" "$C_RST"; }
+ok()      { printf '  %s[OK]%s   %s\n' "$C_OK"   "$C_RST" "$*"; }
+bad()     { printf '  %s[!]%s    %s\n' "$C_BAD"  "$C_RST" "$*"; }
+info()    { printf '  %s[-]%s    %s\n' "$C_INFO" "$C_RST" "$*"; }
+
+#─── Packages ────────────────────────────────────────────────────────
+section "Packages"
+EXPECTED_PKGS=(
+    bspwm sxhkd polybar rofi dunst feh
+    xdotool xclip wmctrl clipmenu xss-lock maim slop
+    network-manager-applet blueman pasystray
+    i3lock-color picom-ftlabs-git libinput-gestures-git
+)
+for p in "${EXPECTED_PKGS[@]}"; do
+    if pacman -Qq "$p" >/dev/null 2>&1; then
+        ok "$p"
+    else
+        bad "$p — not installed (run ./install.sh --apply)"
+    fi
+done
+
+#─── Manifest ────────────────────────────────────────────────────────
+section "Manifest"
+M="$NW_OMARCHY_STATE/manifest.tsv"
+if [ -f "$M" ]; then
+    rows=$(($(wc -l < "$M") - 1))
+    ok "$M ($rows tracked actions)"
+else
+    bad "$M missing — has install --apply ever run?"
+fi
+
+#─── SDDM picker ─────────────────────────────────────────────────────
+section "SDDM picker"
+if [ -f /usr/share/sddm/themes/nw-omarchy/Main.qml ]; then
+    ok "/usr/share/sddm/themes/nw-omarchy/ installed"
+else
+    bad "/usr/share/sddm/themes/nw-omarchy/Main.qml missing — nw-omarchy-sddm-picker enable"
+fi
+
+if [ -f /etc/sddm.conf.d/20-nw-omarchy.conf ]; then
+    cur=$(awk -F= '/^[[:space:]]*Current=/ {gsub(/[ \t]/, "", $2); print $2}' /etc/sddm.conf.d/20-nw-omarchy.conf)
+    if [ "$cur" = "nw-omarchy" ]; then
+        ok "[Theme] Current=nw-omarchy in /etc/sddm.conf.d/20-nw-omarchy.conf"
+    else
+        info "/etc/sddm.conf.d/20-nw-omarchy.conf has Current=${cur:-(empty)}"
+    fi
+else
+    bad "/etc/sddm.conf.d/20-nw-omarchy.conf missing"
+fi
+
+# Any conf in /etc/sddm.conf.d/ (any extension!) that still triggers autologin
+# silently bypasses the picker on boot. Worth flagging.
+shopt -s nullglob
+for f in /etc/sddm.conf.d/*; do
+    [ -f "$f" ] || continue
+    if grep -q '^\[Autologin\]' "$f" 2>/dev/null && grep -qE '^User=.+' "$f" 2>/dev/null; then
+        info "$f declares [Autologin] User=… — SDDM bypasses the picker at boot"
+    fi
+done
+shopt -u nullglob
+
+#─── Theme integration ──────────────────────────────────────────────
+section "Theme integration"
+if [ -f "$HOME/.config/omarchy/current/theme.name" ]; then
+    info "current omarchy theme: $(cat "$HOME/.config/omarchy/current/theme.name")"
+fi
+for tpl in bspwm-colors.conf rofi-colors.rasi polybar-colors.ini; do
+    sym="$HOME/.config/omarchy/themed/${tpl}.tpl"
+    expected="$NW_OMARCHY_PATH/default/themed/${tpl}.tpl"
+    if [ -L "$sym" ] && [ "$(readlink "$sym")" = "$expected" ]; then
+        ok "template symlink: $sym"
+    elif [ -e "$sym" ]; then
+        bad "$sym is not our symlink (points elsewhere)"
+    else
+        bad "$sym missing — run install.sh --apply (themed step)"
+    fi
+    rendered="$HOME/.config/omarchy/current/theme/$tpl"
+    if [ -f "$rendered" ]; then
+        ok "rendered: $rendered"
+    else
+        bad "rendered file missing: $rendered — run omarchy-theme-refresh"
+    fi
+done
+
+#─── Alacritty ──────────────────────────────────────────────────────
+section "Alacritty"
+ALAC="$HOME/.config/alacritty/alacritty.toml"
+NW_KEYBINDS="$NW_OMARCHY_PATH/default/alacritty/keybindings.toml"
+if [ -f "$ALAC" ]; then
+    if grep -qF "$NW_KEYBINDS" "$ALAC"; then
+        ok "alacritty general.import includes nw-omarchy keybindings"
+    else
+        bad "$ALAC general.import missing $NW_KEYBINDS (run install.sh --apply)"
+    fi
+else
+    info "$ALAC not found — alacritty config not extended"
+fi
+
+#─── Session / groups ───────────────────────────────────────────────
+section "Session / groups"
+info "XDG_SESSION_DESKTOP=${XDG_SESSION_DESKTOP:-(unset)}"
+info "DISPLAY=${DISPLAY:-(unset)}   WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-(unset)}"
+if groups | grep -qw input; then
+    ok "user '$USER' in 'input' group (libinput-gestures works)"
+else
+    bad "user '$USER' NOT in 'input' group — sudo gpasswd -a \"\$USER\" input (then re-login)"
+fi
+
+#─── Live daemons (only meaningful inside the bspwm session) ────────
+section "Live daemons"
+if pgrep -x bspwm >/dev/null; then
+    info "bspwm running — checking expected daemons"
+    # pgrep -x compares against /proc/[pid]/comm, which is the kernel-truncated
+    # 15-char exe name. For script-launched daemons (libinput-gestures runs as
+    # python3, clipmenud as bash) -x misses them — use -f for the long /
+    # script-y names, -x for the short native binaries.
+    check() {
+        local proc="$1" mode="$2"
+        if [ "$mode" = "f" ]; then
+            pgrep -f "[^A-Za-z0-9-]$proc(\$|[^A-Za-z0-9-])" >/dev/null 2>&1
+        else
+            pgrep -x "$proc" >/dev/null 2>&1
+        fi
+    }
+    for entry in 'sxhkd:x' 'dunst:x' 'polybar:x' 'picom:x' 'libinput-gestures:f' 'clipmenud:f'; do
+        proc="${entry%:*}"; mode="${entry##*:}"
+        if check "$proc" "$mode"; then
+            ok "$proc running"
+        elif ! command -v "$proc" >/dev/null 2>&1; then
+            info "$proc (binary not on PATH; bspwmrc skips silently)"
+        else
+            bad "$proc not running — bspc wm -r to respawn bspwmrc"
+        fi
+    done
+else
+    info "bspwm not running here — skipping daemon checks"
+fi
+
+echo

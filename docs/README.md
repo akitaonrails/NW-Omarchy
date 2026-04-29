@@ -35,6 +35,14 @@ The uninstaller reads `~/.local/state/nw-omarchy/manifest.tsv` and replays it in
 - [sddm-picker.md](sddm-picker.md) — adding a session picker to the omarchy SDDM greeter (so `nw-bspwm` is selectable)
 - [theming.md](theming.md) — how bspwm/rofi/polybar pick up the active omarchy theme via `~/.config/omarchy/themed/`
 
+## Health-checking the install
+
+```bash
+nw-omarchy-doctor
+```
+
+Lints the live system in eight sections (Packages, Manifest, SDDM picker, Theme integration, Alacritty, Session, Live daemons). Marks every line `[OK]` (healthy), `[!]` (broken — fix suggested), or `[-]` (informational). Read-only, no side effects. First thing to run when something feels off, or after any `omarchy-*` upgrade that might have shifted theme files around.
+
 ## Gotchas worth knowing
 
 ### XLibre skipped by default

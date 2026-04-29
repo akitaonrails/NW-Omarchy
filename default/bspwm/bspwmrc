@@ -49,8 +49,10 @@ pkill -x sxhkd              >/dev/null 2>&1; sleep 0.05
 pkill -x picom              >/dev/null 2>&1; sleep 0.05
 pkill -x dunst              >/dev/null 2>&1; sleep 0.05
 pkill -x polybar            >/dev/null 2>&1; sleep 0.05
-pkill -x libinput-gestures  >/dev/null 2>&1; sleep 0.05
-pkill -x clipmenud          >/dev/null 2>&1; sleep 0.05
+# libinput-gestures runs as python3, clipmenud runs as bash — comm is the
+# interpreter, not the script name, so pkill -x doesn't match. Use -f.
+pkill -f libinput-gestures  >/dev/null 2>&1; sleep 0.05
+pkill -f /usr/bin/clipmenud >/dev/null 2>&1; sleep 0.05
 
 # Tell clipmenu (and its picker) to use rofi instead of dmenu. CM_LAUNCHER is
 # inherited by clipmenud's children (the picker), so set it once here.
