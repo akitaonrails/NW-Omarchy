@@ -12,6 +12,25 @@ NW_DEFAULT="$HOME/.local/share/nw-omarchy/default"
 PATH="$HOME/.local/share/nw-omarchy/bin:$HOME/.local/share/omarchy/bin:$PATH"
 export PATH
 
+#─── input prefs (parity with omarchy hypr input.conf) ──────────────
+# Faster key repeat: 250ms delay, 40 reps/sec.
+command -v xset >/dev/null 2>&1 && xset r rate 250 40
+
+# Natural-scrolling + clickfinger + disable-while-typing on every touchpad.
+if command -v xinput >/dev/null 2>&1; then
+    xinput list --name-only 2>/dev/null | while IFS= read -r name; do
+        case "$name" in
+            *[Tt]ouchpad*|*[Tt]rackpad*)
+                xinput set-prop "$name" "libinput Natural Scrolling Enabled" 1     2>/dev/null || true
+                xinput set-prop "$name" "libinput Tapping Enabled"           1     2>/dev/null || true
+                xinput set-prop "$name" "libinput Disable While Typing Enabled" 1  2>/dev/null || true
+                # Click method enum: { 0,0 } default, { 1,0 } button-areas, { 0,1 } clickfinger.
+                xinput set-prop "$name" "libinput Click Method Enabled"      0 1   2>/dev/null || true
+                ;;
+        esac
+    done
+fi
+
 #─── monitors / desktops ──────────────────────────────────────────────
 # 5 workspaces — parity with omarchy waybar's persistent-workspaces.
 bspc monitor -d 1 2 3 4 5
