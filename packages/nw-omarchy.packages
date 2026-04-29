@@ -8,6 +8,7 @@ sxhkd
 # --- Compositor (Hyprland-like eye candy) ---
 # FT-Labs picom: animations, blur, rounded corners, gradient borders.
 picom-ftlabs-git     (aur)
+libinput-gestures-git (aur)  # 3-finger swipe → workspace, etc
 
 # --- Bar / launcher / notifications ---
 polybar

@@ -45,10 +45,11 @@ bspc rule -a 1Password              state=floating
 bspc rule -a Galculator             state=floating
 
 #─── autostart (idempotent — kill existing, restart) ────────────────
-pkill -x sxhkd     >/dev/null 2>&1; sleep 0.05
-pkill -x picom     >/dev/null 2>&1; sleep 0.05
-pkill -x dunst     >/dev/null 2>&1; sleep 0.05
-pkill -x polybar   >/dev/null 2>&1; sleep 0.05
+pkill -x sxhkd              >/dev/null 2>&1; sleep 0.05
+pkill -x picom              >/dev/null 2>&1; sleep 0.05
+pkill -x dunst              >/dev/null 2>&1; sleep 0.05
+pkill -x polybar            >/dev/null 2>&1; sleep 0.05
+pkill -x libinput-gestures  >/dev/null 2>&1; sleep 0.05
 
 # wallpaper — prefer omarchy's active theme background, then fall back.
 NW_BG="$HOME/.config/omarchy/current/background"
@@ -74,6 +75,13 @@ fi
 # AUR package doesn't spam the X session log.
 if command -v picom >/dev/null 2>&1; then
     picom --config "$HOME/.config/picom/picom.conf" -b
+fi
+
+# touchpad gestures (3-finger swipe → workspace switch, etc).
+# Config: ~/.config/libinput-gestures.conf (symlinked to our default).
+# Requires user in 'input' group; install/gestures.sh checks and warns.
+if command -v libinput-gestures >/dev/null 2>&1; then
+    libinput-gestures >/dev/null 2>&1 &
 fi
 
 # notifications

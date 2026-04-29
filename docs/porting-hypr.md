@@ -86,6 +86,19 @@ App launchers route through `nw-omarchy-launch-*` / `nw-omarchy-cmd-*` helpers i
 
 All native via `pactl`, `brightnessctl`, `playerctl` (in package list). No omarchy helpers needed; works the same on X11.
 
+### Touchpad gestures
+
+Hyprland has built-in `gesture = N, direction, action` handling. On X11 there's no compositor for this, so we run a small daemon (`libinput-gestures`, AUR `libinput-gestures-git`). It listens on libinput swipe/pinch events and runs shell commands.
+
+| Hyprland | X11 (libinput-gestures) |
+|---|---|
+| `gesture = 3, horizontal, workspace` | `gesture swipe left/right 3 → bspc desktop -f next.local/prev.local` |
+| (none) | `gesture swipe left/right 4 → bspc node -d next/prev.local --follow` (move active window across) |
+
+Config lives at `~/.config/libinput-gestures.conf` (symlinked to `default/libinput-gestures/libinput-gestures.conf` by `install/gestures.sh`). Started from `bspwmrc` after picom. Requires the user be in the `input` group — the install step warns if not.
+
+Caveat vs Hyprland: there's **no live preview animation** during the swipe. libinput-gestures fires a discrete command on swipe completion, not a continuous scrub. You get the destination workspace; you don't see the in-between.
+
 ## Omarchy helper status
 
 Omarchy ships ~80 `omarchy-*` scripts in `~/.local/share/omarchy/bin/`. The
