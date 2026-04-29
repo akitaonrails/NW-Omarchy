@@ -34,6 +34,7 @@ Reads `~/.local/state/nw-omarchy/manifest.tsv` and undoes everything: removes on
 
 ```bash
 nw-omarchy-status        # what's tracked, what would be removed
+nw-omarchy-doctor        # lint live install (packages, themes, daemons, ...)
 ```
 
 ## Documentation
