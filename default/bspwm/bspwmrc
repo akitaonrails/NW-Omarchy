@@ -1,0 +1,84 @@
+#!/bin/sh
+# nw-omarchy default bspwmrc.
+# This file is sourced by the user's ~/.config/bspwm/bspwmrc shim.
+# Reload bspwm config (without restarting): bspc wm -r
+
+NW_DEFAULT="$HOME/.local/share/nw-omarchy/default"
+
+#─── monitors / desktops ──────────────────────────────────────────────
+bspc monitor -d 1 2 3 4 5 6 7 8 9 10
+
+#─── window layout (Hyprland-ish: tight gaps, thin border, dwindle-feel) ──
+bspc config border_width            2
+bspc config window_gap              4
+bspc config split_ratio             0.50
+bspc config borderless_monocle      true
+bspc config gapless_monocle         true
+bspc config single_monocle          false
+bspc config focus_follows_pointer   true
+bspc config pointer_follows_focus   false
+bspc config pointer_modifier        mod4
+bspc config click_to_focus          button1
+bspc config swallow_first_click     false
+
+# Colors: static fallbacks first (Hyprland cyan), then overridden by the
+# omarchy current-theme palette if our theme template has been rendered.
+# Render path: ~/.config/omarchy/themed/bspwm-colors.conf.tpl  →  current/theme/.
+bspc config focused_border_color    "#33ccff"
+bspc config normal_border_color     "#595959"
+bspc config presel_feedback_color   "#33ccff"
+NW_THEME_BSPWM="$HOME/.config/omarchy/current/theme/bspwm-colors.conf"
+[ -f "$NW_THEME_BSPWM" ] && . "$NW_THEME_BSPWM"
+
+#─── window rules (parity with omarchy floating apps) ────────────────
+bspc rule -a Pavucontrol            state=floating
+bspc rule -a Blueman-manager        state=floating
+bspc rule -a Nm-connection-editor   state=floating
+bspc rule -a 1Password              state=floating
+bspc rule -a Galculator             state=floating
+
+#─── autostart (idempotent — kill existing, restart) ────────────────
+pkill -x sxhkd     >/dev/null 2>&1; sleep 0.05
+pkill -x picom     >/dev/null 2>&1; sleep 0.05
+pkill -x dunst     >/dev/null 2>&1; sleep 0.05
+pkill -x polybar   >/dev/null 2>&1; sleep 0.05
+
+# wallpaper — prefer omarchy's active theme background, then fall back.
+NW_BG="$HOME/.config/omarchy/current/background"
+if [ -e "$NW_BG" ]; then
+    feh --no-fehbg --bg-fill "$NW_BG" &
+else
+    for w in "$HOME/.config/wallpaper.png" "$HOME/.config/wallpaper.jpg"; do
+        [ -f "$w" ] && { feh --no-fehbg --bg-fill "$w" & break; }
+    done
+fi
+
+# sxhkd: main config + extra config (later definitions win on conflict).
+# NB: sxhkd's -c flag takes the MAIN config (singular). Additional config
+# files are passed as POSITIONAL args. Earlier we used `-c A -c B`, which
+# made B overwrite A and silently dropped every binding from A.
+if [ -f "$HOME/.config/sxhkd/sxhkdrc" ]; then
+    sxhkd -c "$NW_DEFAULT/sxhkd/sxhkdrc" "$HOME/.config/sxhkd/sxhkdrc" &
+else
+    sxhkd -c "$NW_DEFAULT/sxhkd/sxhkdrc" &
+fi
+
+# compositor (FT-Labs picom). Skip silently if not installed so a missing
+# AUR package doesn't spam the X session log.
+if command -v picom >/dev/null 2>&1; then
+    picom --config "$HOME/.config/picom/picom.conf" -b
+fi
+
+# notifications
+dunst &
+
+# bar
+"$HOME/.config/polybar/launch.sh" &
+
+# screen locking on suspend / idle (relies on logind + xss-lock)
+xss-lock --transfer-sleep-lock -- nw-omarchy-lock &
+
+# systray helpers
+nm-applet --indicator   >/dev/null 2>&1 &
+blueman-applet          >/dev/null 2>&1 &
+pasystray               >/dev/null 2>&1 &

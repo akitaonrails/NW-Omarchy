@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# nw-omarchy-track — the single source of truth for what nw-omarchy installed.
+#
+# Manifest:    $NW_OMARCHY_STATE/manifest.tsv (default: ~/.local/state/nw-omarchy/manifest.tsv)
+# Schema:      timestamp <TAB> action <TAB> target <TAB> backup
+# Actions:     pkg | pkg-skip | file | symlink | dir | xsession
+#              ("backup" is "-" when there was nothing to displace)
+
+set -euo pipefail
+
+NW_OMARCHY_STATE="${NW_OMARCHY_STATE:-$HOME/.local/state/nw-omarchy}"
+MANIFEST="$NW_OMARCHY_STATE/manifest.tsv"
+
+# Only the `record` subcommand should create state on disk. Everything else
+# (has, list, manifest-path, state-path) treats a missing manifest as empty —
+# this lets dry-runs introspect without leaving files behind.
+ensure_state() {
+    mkdir -p "$NW_OMARCHY_STATE/backups"
+    if [ ! -f "$MANIFEST" ]; then
+        printf 'timestamp\taction\ttarget\tbackup\n' > "$MANIFEST"
+    fi
+}
+
+usage() {
+    cat <<EOF >&2
+usage:
+  nw-omarchy-track record <action> <target> [backup]
+  nw-omarchy-track has    <action> <target>            # exit 0 if present
+  nw-omarchy-track list                                # cat manifest
+  nw-omarchy-track manifest-path                       # print manifest path
+  nw-omarchy-track state-path                          # print state dir
+EOF
+    exit 2
+}
+
+[ "$#" -ge 1 ] || usage
+cmd="$1"; shift
+
+case "$cmd" in
+    record)
+        [ "$#" -ge 2 ] || usage
+        ensure_state
+        action="$1"; target="$2"; backup="${3:--}"
+        if awk -F'\t' -v a="$action" -v t="$target" \
+            'NR>1 && $2==a && $3==t {found=1} END{exit !found}' "$MANIFEST"; then
+            exit 0
+        fi
+        printf '%s\t%s\t%s\t%s\n' "$(date -Iseconds)" "$action" "$target" "$backup" >> "$MANIFEST"
+        ;;
+    has)
+        [ "$#" -ge 2 ] || usage
+        action="$1"; target="$2"
+        # missing manifest → not present
+        [ -f "$MANIFEST" ] || exit 1
+        awk -F'\t' -v a="$action" -v t="$target" \
+            'NR>1 && $2==a && $3==t {found=1} END{exit !found}' "$MANIFEST"
+        ;;
+    list)
+        [ -f "$MANIFEST" ] && cat "$MANIFEST"
+        ;;
+    manifest-path)
+        printf '%s\n' "$MANIFEST"
+        ;;
+    state-path)
+        printf '%s\n' "$NW_OMARCHY_STATE"
+        ;;
+    *)
+        usage
+        ;;
+esac

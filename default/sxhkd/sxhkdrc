@@ -1,0 +1,172 @@
+# nw-omarchy default sxhkdrc — port of the user's Hyprland bindings.
+# Reload after edits:  pkill -USR1 -x sxhkd
+#
+# super = Mod4 (Win key). The user file ~/.config/sxhkd/sxhkdrc is loaded
+# AFTER this one and overrides on conflict.
+
+#─── apps ─────────────────────────────────────────────────────────────
+super + Return
+    alacritty
+
+super + alt + Return
+    alacritty -e bash -c "tmux attach || tmux new -s Work"
+
+super + shift + Return
+    brave
+
+super + b
+    brave
+
+super + shift + b
+    brave
+
+super + shift + alt + b
+    brave --incognito
+
+super + shift + f
+    nautilus --new-window
+
+super + shift + n
+    alacritty -e nvim
+
+super + shift + d
+    alacritty -e lazydocker
+
+super + shift + m
+    sh -c 'pgrep -x spotify >/dev/null && wmctrl -x -a spotify || spotify'
+
+super + shift + g
+    signal-desktop
+
+super + shift + o
+    obsidian
+
+super + shift + w
+    typora
+
+super + shift + slash
+    1password
+
+#─── menus / launcher ─────────────────────────────────────────────────
+super + space
+    rofi -show drun
+
+super + ctrl + e
+    rofi -show emoji
+
+super + k
+    rofi -show keys
+
+#─── window control ───────────────────────────────────────────────────
+super + w
+    bspc node -c
+
+super + j
+    bspc node -t \~tiled
+
+super + p
+    bspc node -t \~pseudo_tiled
+
+super + shift + v
+    bspc node -t \~floating
+
+shift + F11
+    bspc node -t \~fullscreen
+
+alt + F11
+    bspc node -t \~fullscreen
+
+#─── focus (arrow keys, Hypr parity) ──────────────────────────────────
+super + Left
+    bspc node -f west
+super + Right
+    bspc node -f east
+super + Up
+    bspc node -f north
+super + Down
+    bspc node -f south
+
+#─── swap (Hypr SUPER+SHIFT+arrow → swapwindow) ──────────────────────
+super + shift + Left
+    bspc node -s west
+super + shift + Right
+    bspc node -s east
+super + shift + Up
+    bspc node -s north
+super + shift + Down
+    bspc node -s south
+
+#─── workspaces (1-9, 0 → 10) ─────────────────────────────────────────
+super + {1-9,0}
+    bspc desktop -f {1-9,10}
+
+super + shift + {1-9,0}
+    bspc node -d {1-9,10} --follow
+
+#─── workspace cycling ────────────────────────────────────────────────
+super + Tab
+    bspc desktop -f next.local
+super + shift + Tab
+    bspc desktop -f prev.local
+super + ctrl + Tab
+    bspc desktop -f last
+
+#─── alt-tab through windows on current desktop ──────────────────────
+alt + Tab
+    bspc node -f next.local.!hidden.window
+alt + shift + Tab
+    bspc node -f prev.local.!hidden.window
+
+#─── resize (Hypr: SUPER+minus / SUPER+equal) ────────────────────────
+super + minus
+    bspc node -z left -100 0
+super + equal
+    bspc node -z right 100 0
+super + shift + minus
+    bspc node -z top 0 -100
+super + shift + equal
+    bspc node -z bottom 0 100
+
+#─── screenshots ──────────────────────────────────────────────────────
+Print
+    sh -c 'maim --select | xclip -selection clipboard -t image/png'
+
+alt + Print
+    sh -c 'mkdir -p "$HOME/Pictures" && maim --select "$HOME/Pictures/$(date +%Y%m%d-%H%M%S).png"'
+
+#─── system / aesthetics ──────────────────────────────────────────────
+super + l
+    nw-omarchy-lock
+
+super + ctrl + l
+    bspc desktop -l next
+
+super + BackSpace
+    sh -c 'g=$(bspc config -d focused window_gap); bspc config -d focused window_gap $([ "$g" -gt 0 ] && echo 0 || echo 4)'
+
+#─── multimedia keys ──────────────────────────────────────────────────
+XF86AudioRaiseVolume
+    pactl set-sink-volume @DEFAULT_SINK@ +5%
+XF86AudioLowerVolume
+    pactl set-sink-volume @DEFAULT_SINK@ -5%
+XF86AudioMute
+    pactl set-sink-mute @DEFAULT_SINK@ toggle
+XF86AudioMicMute
+    pactl set-source-mute @DEFAULT_SOURCE@ toggle
+
+XF86MonBrightnessUp
+    brightnessctl set +5%
+XF86MonBrightnessDown
+    brightnessctl set 5%-
+
+XF86KbdBrightnessUp
+    brightnessctl --device='*kbd_backlight*' set +1
+XF86KbdBrightnessDown
+    brightnessctl --device='*kbd_backlight*' set 1-
+
+XF86AudioPlay
+    playerctl play-pause
+XF86AudioNext
+    playerctl next
+XF86AudioPrev
+    playerctl previous

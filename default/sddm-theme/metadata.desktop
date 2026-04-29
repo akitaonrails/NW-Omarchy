@@ -1,0 +1,6 @@
+[SddmGreeterTheme]
+Name=nw-omarchy
+Description=Omarchy login theme with a session picker (Up/Down to switch).
+Author=nw-omarchy
+Type=sddm-theme
+Version=1.0

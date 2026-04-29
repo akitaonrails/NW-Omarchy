@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# nw-omarchy-lock — Hyprland-ish lock screen via i3lock-color.
+# Plain solid-color lock for now; v2 can add screenshot+blur background.
+
+set -euo pipefail
+
+exec i3lock-color \
+    -n \
+    --insidever-color=00000000 --ringver-color=94e2d5ff \
+    --insidewrong-color=00000000 --ringwrong-color=f38ba8ff \
+    --inside-color=00000000     --ring-color=89b4faff \
+    --line-color=00000000       --separator-color=00000000 \
+    --keyhl-color=89b4faff      --bshl-color=f38ba8ff \
+    --time-color=cdd6f4ff       --date-color=6c7086ff \
+    --layout-color=cdd6f4ff     --greeter-color=cdd6f4ff \
+    --indicator --clock \
+    --time-str="%H:%M:%S" \
+    --date-str="%a %d %b %Y" \
+    --color=1e1e2e

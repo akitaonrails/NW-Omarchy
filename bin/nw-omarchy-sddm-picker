@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+# nw-omarchy-sddm-picker — toggle the nw-omarchy SDDM theme on/off.
+#
+# enable   → run install/sddm-picker.sh (idempotent; tracked in manifest).
+# disable  → remove the theme dir and the conf override. Manifest entries
+#            point at now-missing files; nw-omarchy-uninstall handles that
+#            gracefully (it checks existence before removing).
+# status   → show what's installed and what SDDM is configured to use.
+#
+# Default is dry-run. Pass --apply to actually change anything.
+
+set -euo pipefail
+
+NW_OMARCHY_PATH="${NW_OMARCHY_PATH:-$HOME/.local/share/nw-omarchy}"
+NW_OMARCHY_STATE="${NW_OMARCHY_STATE:-$HOME/.local/state/nw-omarchy}"
+export NW_OMARCHY_PATH NW_OMARCHY_STATE
+export PATH="$NW_OMARCHY_PATH/bin:$PATH"
+
+OUR_THEME_DIR="/usr/share/sddm/themes/nw-omarchy"
+OUR_CONF="/etc/sddm.conf.d/20-nw-omarchy.conf"
+
+usage() {
+    cat >&2 <<EOF
+usage: nw-omarchy-sddm-picker {enable|disable|status} [--apply]
+
+  enable    Install the nw-omarchy SDDM theme (omarchy + session picker)
+            and switch SDDM to it.
+  disable   Remove the theme and conf override; SDDM falls back to whatever
+            other theme config is present (or its compiled-in default).
+  status    Show whether the theme + override are installed, and what SDDM
+            will resolve [Theme] Current to.
+
+Default is --dry-run. Pass --apply to actually change anything.
+After enable/disable, restart SDDM to pick up the change:
+    sudo systemctl restart sddm   (kills the running X session)
+EOF
+    exit 2
+}
+
+[ "$#" -ge 1 ] || usage
+ACTION="$1"; shift || true
+
+DRY_RUN=1
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --apply)   DRY_RUN=0 ;;
+        --dry-run) DRY_RUN=1 ;;
+        -h|--help) usage ;;
+        *) echo "unknown flag: $1" >&2; exit 2 ;;
+    esac
+    shift
+done
+export DRY_RUN
+
+run() {
+    if [ "$DRY_RUN" = "1" ]; then
+        printf '[dry] '; printf '%q ' "$@"; printf '\n'
+    else
+        printf '+ '; printf '%q ' "$@"; printf '\n'
+        "$@"
+    fi
+}
+
+case "$ACTION" in
+    enable)
+        if [ "$DRY_RUN" = "0" ]; then
+            sudo -v || { echo "sudo authentication failed — aborting." >&2; exit 1; }
+        fi
+        bash "$NW_OMARCHY_PATH/install/sddm-picker.sh"
+        ;;
+
+    disable)
+        if [ "$DRY_RUN" = "0" ]; then
+            sudo -v || { echo "sudo authentication failed — aborting." >&2; exit 1; }
+        fi
+        if [ -e "$OUR_CONF" ]; then
+            run sudo rm -f "$OUR_CONF"
+        else
+            echo "  not present: $OUR_CONF"
+        fi
+        if [ -d "$OUR_THEME_DIR" ]; then
+            run sudo rm -rf "$OUR_THEME_DIR"
+        else
+            echo "  not present: $OUR_THEME_DIR"
+        fi
+        echo
+        echo "sddm-picker: disabled. Restart SDDM to pick up the change:"
+        echo "             sudo systemctl restart sddm   (kills the running X session)"
+        ;;
+
+    status)
+        echo "── theme files ──────────────────────────────────────────"
+        if [ -d "$OUR_THEME_DIR" ]; then
+            echo "  $OUR_THEME_DIR/  (installed)"
+            ls -1 "$OUR_THEME_DIR" 2>/dev/null | sed 's/^/    /'
+        else
+            echo "  $OUR_THEME_DIR/  (not installed)"
+        fi
+
+        echo
+        echo "── SDDM conf override ──────────────────────────────────"
+        if [ -f "$OUR_CONF" ]; then
+            echo "  $OUR_CONF:"
+            sed 's/^/    /' "$OUR_CONF"
+        else
+            echo "  $OUR_CONF (absent)"
+        fi
+
+        echo
+        echo "── effective [Theme] Current ────────────────────────────"
+        # Last-wins across /etc/sddm.conf.d/*.conf. Show what each file declares.
+        for f in /etc/sddm.conf.d/*.conf; do
+            [ -f "$f" ] || continue
+            cur="$(awk '/^\[Theme\]/{intheme=1; next} /^\[/{intheme=0} intheme && /^Current=/{print substr($0,9)}' "$f")"
+            [ -n "${cur:-}" ] && printf '  %s: Current=%s\n' "$f" "$cur"
+        done
+
+        echo
+        echo "── /etc/sddm.conf.d/ files (SDDM reads ALL of them) ─────"
+        # SDDM doesn't filter by extension — every file in conf.d/ is parsed.
+        # Our 20-nw-omarchy.conf can be silently overridden by anything that
+        # sorts after it (e.g. autologin.conf.disabled) and declares [Theme] Current=.
+        for f in /etc/sddm.conf.d/*; do
+            [ -f "$f" ] || continue
+            cur="$(awk '/^\[Theme\]/{intheme=1; next} /^\[/{intheme=0} intheme && /^Current=/{print substr($0,9)}' "$f")"
+            autouser="$(awk '/^\[Autologin\]/{inauto=1; next} /^\[/{inauto=0} inauto && /^User=/{print substr($0,6)}' "$f")"
+            extra=""
+            [ -n "${cur:-}" ]      && extra="${extra} [Theme]Current=${cur}"
+            [ -n "${autouser:-}" ] && extra="${extra} [Autologin]User=${autouser}"
+            printf '  %s%s\n' "$f" "$extra"
+        done
+
+        echo
+        echo "── autologin status ─────────────────────────────────────"
+        autoactive=""
+        for f in /etc/sddm.conf.d/*; do
+            [ -f "$f" ] || continue
+            if awk '/^\[Autologin\]/{inauto=1; next} /^\[/{inauto=0} inauto && /^User=.+/{found=1} END{exit !found}' "$f"; then
+                autoactive="$f"
+                break
+            fi
+        done
+        if [ -n "$autoactive" ]; then
+            echo "  $autoactive declares [Autologin] User=… — SDDM will skip the greeter."
+            echo "  Move it OUT of /etc/sddm.conf.d/ entirely (renaming to .disabled is not enough;"
+            echo "  SDDM parses every file in that directory regardless of extension):"
+            echo "      sudo mv $autoactive /etc/sddm-autologin.conf.disabled"
+        else
+            echo "  no autologin (greeter will be shown)."
+        fi
+        ;;
+
+    *)
+        usage
+        ;;
+esac

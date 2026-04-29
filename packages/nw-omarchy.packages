@@ -1,0 +1,40 @@
+# nw-omarchy package list. One package per line. # comments ignored.
+# AUR packages are marked with a trailing  (aur)  field — installer routes them through yay/paru.
+
+# --- Window manager + hotkey daemon ---
+bspwm
+sxhkd
+
+# --- Compositor (Hyprland-like eye candy) ---
+# FT-Labs picom: animations, blur, rounded corners, gradient borders.
+picom-ftlabs-git     (aur)
+
+# --- Bar / launcher / notifications ---
+polybar
+rofi
+dunst
+
+# --- Lock screen / wallpaper / utilities ---
+i3lock-color         (aur)
+feh
+xdotool
+xclip
+xss-lock
+maim                 # screenshots
+slop                 # region selector for maim
+
+# --- Tray / status helpers (X11 equivalents to omarchy waybar modules) ---
+network-manager-applet
+blueman
+pasystray
+
+# --- XLibre Xorg server (NOT in default install) ---
+# xlibre-xserver-common-git declares `Conflicts=xorg-server-common` without
+# `Provides=xorg-server-common`. Removing xorg-server-common cascades to
+# xorg-xwayland → hyprland. So XLibre can only REPLACE Xorg, not coexist.
+# On a Hyprland machine this would uninstall Hyprland.
+#
+# bspwm runs fine on stock Xorg. If you're on a machine without Hyprland
+# and want XLibre anyway, install manually:  yay -S xlibre-xserver-git
+# and run: nw-omarchy-track record pkg xlibre-xserver-git
+# so uninstall still cleans it up.

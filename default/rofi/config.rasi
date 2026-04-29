@@ -1,0 +1,82 @@
+// nw-omarchy default rofi config.
+// User overrides go in ~/.config/rofi/config.rasi (which @imports this file).
+
+configuration {
+    modi:           "drun,run,window";
+    show-icons:     true;
+    icon-theme:     "Papirus";
+    font:           "JetBrainsMono Nerd Font 11";
+    display-drun:   "  Apps";
+    display-run:    "  Run";
+    display-window: "  Windows";
+    drun-display-format: "{name}";
+    sidebar-mode:   false;
+}
+
+// Theme palette: rendered from omarchy current theme via
+// ~/.config/omarchy/themed/rofi-colors.rasi.tpl. Defines bg / bg-alt / fg /
+// fg-alt / primary / selected / selected-fg / border / urgent / disabled.
+@import "~/.config/omarchy/current/theme/rofi-colors.rasi"
+
+* {
+    background-color: transparent;
+    text-color:       @fg;
+}
+
+window {
+    transparency:     "real";
+    width:            600;
+    border-radius:    8;
+    background-color: @bg;
+    location:         center;
+    padding:          10;
+}
+
+mainbox {
+    children: [ inputbar, listview ];
+    spacing:  10;
+}
+
+inputbar {
+    padding:           8;
+    background-color:  @bg-alt;
+    border-radius:     6;
+    children:          [ prompt, entry ];
+}
+
+prompt {
+    padding:    0 8 0 0;
+    text-color: @primary;
+}
+
+entry {
+    placeholder:       "Search…";
+    placeholder-color: @disabled;
+}
+
+listview {
+    lines:        10;
+    columns:      1;
+    padding:      0;
+    fixed-height: false;
+    cycle:        true;
+    scrollbar:    false;
+}
+
+element {
+    padding:       6;
+    border-radius: 6;
+    spacing:       8;
+}
+
+element selected {
+    background-color: @selected;
+    text-color:       @fg;
+}
+
+element-icon {
+    size:    1.2em;
+    padding: 0 8 0 0;
+}
+
+element-text { text-color: inherit; }

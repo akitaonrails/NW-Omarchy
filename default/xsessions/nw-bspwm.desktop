@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=nw-bspwm
+Comment=bspwm + picom + XLibre (via nw-omarchy)
+Exec=bspwm
+TryExec=bspwm
+Type=Application
+DesktopNames=bspwm

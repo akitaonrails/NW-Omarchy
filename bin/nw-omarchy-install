@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# nw-omarchy-install — orchestrator. Default is dry-run; --apply to commit.
+
+set -euo pipefail
+
+NW_OMARCHY_PATH="${NW_OMARCHY_PATH:-$HOME/.local/share/nw-omarchy}"
+NW_OMARCHY_STATE="${NW_OMARCHY_STATE:-$HOME/.local/state/nw-omarchy}"
+export NW_OMARCHY_PATH NW_OMARCHY_STATE
+export PATH="$NW_OMARCHY_PATH/bin:$PATH"
+
+DRY_RUN=1
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --apply)   DRY_RUN=0 ;;
+        --dry-run) DRY_RUN=1 ;;
+        -h|--help)
+            cat <<EOF
+usage: nw-omarchy-install [--apply | --dry-run]
+
+Installs the bspwm + picom + XLibre login session alongside Omarchy.
+Idempotent: re-running on a fully-installed system makes no changes.
+
+Default is --dry-run (prints what would happen, touches nothing).
+Pass --apply to actually install.
+
+Every action is recorded in:  $NW_OMARCHY_STATE/manifest.tsv
+Uninstall later with:         nw-omarchy-uninstall --apply
+EOF
+            exit 0 ;;
+        *)
+            echo "unknown flag: $1" >&2
+            exit 2 ;;
+    esac
+    shift
+done
+export DRY_RUN
+
+if [ "$DRY_RUN" = "1" ]; then
+    echo "==> nw-omarchy: DRY RUN — no changes will be made. Pass --apply to install for real."
+else
+    echo "==> nw-omarchy: APPLY — changes will be recorded in $NW_OMARCHY_STATE/manifest.tsv"
+    mkdir -p "$NW_OMARCHY_STATE"
+fi
+echo
+
+# Pre-authorize sudo on the user's tty BEFORE the install pipeline starts.
+# Why: pacman, AUR helpers and `install` all need sudo. If we ran them under
+# a tee/pipe, sudo would lose access to /dev/tty and fingerprint/password
+# prompts would silently time out (we hit this in real life).
+if [ "$DRY_RUN" = "0" ]; then
+    echo "==> caching sudo credentials (may prompt)…"
+    sudo -v || { echo "sudo authentication failed — aborting." >&2; exit 1; }
+
+    # Background keepalive — refresh the sudo timestamp every 60s so longer
+    # AUR builds don't fall off the cache. -n means non-interactive: it just
+    # bumps the timestamp if it's still valid; if it's expired we fall through.
+    ( while sudo -n -v 2>/dev/null; do sleep 60; done ) &
+    KEEPALIVE_PID=$!
+    trap '[ -n "${KEEPALIVE_PID:-}" ] && kill "$KEEPALIVE_PID" 2>/dev/null || true' EXIT
+fi
+
+bash "$NW_OMARCHY_PATH/install/all.sh"

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# nw-omarchy-status — what's currently tracked.
+
+set -euo pipefail
+
+NW_OMARCHY_STATE="${NW_OMARCHY_STATE:-$HOME/.local/state/nw-omarchy}"
+MANIFEST="$NW_OMARCHY_STATE/manifest.tsv"
+
+if [ ! -f "$MANIFEST" ]; then
+    echo "nw-omarchy: not installed (no manifest at $MANIFEST)"
+    exit 0
+fi
+
+declare -A COUNTS
+while IFS=$'\t' read -r ts action target backup; do
+    [ "$ts" = "timestamp" ] && continue
+    [ -z "${action:-}" ] && continue
+    COUNTS[$action]=$((${COUNTS[$action]:-0} + 1))
+done < "$MANIFEST"
+
+echo "manifest: $MANIFEST"
+echo
+echo "summary:"
+for action in pkg pkg-skip symlink file xsession dir; do
+    n="${COUNTS[$action]:-0}"
+    printf '  %-12s %d\n' "$action" "$n"
+done
+echo
+echo "detail:"
+column -ts $'\t' "$MANIFEST"

@@ -1,0 +1,13 @@
+#!/bin/sh
+# nw-omarchy startx fallback. SDDM users do NOT use this — the .desktop entry
+# launches bspwm directly. Use this only if you `startx` from a TTY:
+#   cp ~/.local/share/nw-omarchy/default/xinit/xinitrc-bspwm ~/.xinitrc
+#   startx
+
+[ -f /etc/X11/Xresources ]  && xrdb -merge /etc/X11/Xresources
+[ -f "$HOME/.Xresources" ]  && xrdb -merge "$HOME/.Xresources"
+
+# Source profile-style env if not already (xinit sometimes skips this)
+[ -f "$HOME/.profile" ] && . "$HOME/.profile"
+
+exec bspwm

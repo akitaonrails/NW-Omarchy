@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# nw-omarchy-uninstall — replays the manifest in reverse to undo every recorded action.
+
+set -euo pipefail
+
+NW_OMARCHY_PATH="${NW_OMARCHY_PATH:-$HOME/.local/share/nw-omarchy}"
+NW_OMARCHY_STATE="${NW_OMARCHY_STATE:-$HOME/.local/state/nw-omarchy}"
+export NW_OMARCHY_PATH NW_OMARCHY_STATE
+export PATH="$NW_OMARCHY_PATH/bin:$PATH"
+
+DRY_RUN=1
+KEEP_STATE=0
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --apply)      DRY_RUN=0 ;;
+        --dry-run)    DRY_RUN=1 ;;
+        --keep-state) KEEP_STATE=1 ;;
+        -h|--help)
+            cat <<EOF
+usage: nw-omarchy-uninstall [--apply] [--keep-state]
+
+Reads \$NW_OMARCHY_STATE/manifest.tsv in reverse and undoes every recorded action:
+  pkg          → pacman -Rns
+  pkg-skip     → ignored (was pre-existing)
+  symlink/file → remove + restore backup if any
+  xsession     → sudo rm
+  dir          → rmdir if empty
+
+Default is --dry-run.
+--keep-state preserves the manifest + backups for inspection.
+EOF
+            exit 0 ;;
+        *)
+            echo "unknown flag: $1" >&2
+            exit 2 ;;
+    esac
+    shift
+done
+
+MANIFEST="$NW_OMARCHY_STATE/manifest.tsv"
+if [ ! -f "$MANIFEST" ]; then
+    echo "no manifest at $MANIFEST — nothing to do"
+    exit 0
+fi
+
+apply() {
+    if [ "$DRY_RUN" = "1" ]; then
+        printf '[dry] '
+        printf '%q ' "$@"
+        printf '\n'
+    else
+        printf '+ '
+        printf '%q ' "$@"
+        printf '\n'
+        "$@"
+    fi
+}
+
+if [ "$DRY_RUN" = "1" ]; then
+    echo "==> nw-omarchy uninstall: DRY RUN — pass --apply to actually undo."
+else
+    echo "==> nw-omarchy uninstall: APPLY"
+fi
+echo
+
+# Read manifest in reverse, skipping the header.
+mapfile -t LINES < <(tail -n +2 "$MANIFEST" | tac)
+
+# Pass 1: undo file/symlink/xsession/dir actions.
+PKGS=()
+for line in "${LINES[@]}"; do
+    IFS=$'\t' read -r ts action target backup <<<"$line"
+    case "$action" in
+        pkg)
+            PKGS+=("$target")
+            ;;
+        pkg-skip)
+            ;; # leave alone
+        symlink)
+            if [ -L "$target" ]; then
+                apply rm -- "$target"
+            fi
+            if [ "$backup" != "-" ] && [ -e "$backup" ]; then
+                apply mv -- "$backup" "$target"
+            fi
+            ;;
+        file)
+            if [ -e "$target" ] || [ -L "$target" ]; then
+                if [[ "$target" == /usr/* || "$target" == /etc/* ]]; then
+                    apply sudo rm -- "$target"
+                else
+                    apply rm -- "$target"
+                fi
+            fi
+            if [ "$backup" != "-" ] && [ -e "$backup" ]; then
+                if [[ "$target" == /usr/* || "$target" == /etc/* ]]; then
+                    apply sudo mv -- "$backup" "$target"
+                else
+                    apply mv -- "$backup" "$target"
+                fi
+            fi
+            ;;
+        xsession)
+            if [ -e "$target" ]; then
+                apply sudo rm -- "$target"
+            fi
+            ;;
+        dir)
+            if [ -d "$target" ] && [ -z "$(ls -A "$target" 2>/dev/null)" ]; then
+                if [[ "$target" == /usr/* || "$target" == /etc/* ]]; then
+                    apply sudo rmdir -- "$target"
+                else
+                    apply rmdir -- "$target"
+                fi
+            fi
+            ;;
+        *)
+            echo "warning: unknown action '$action' for '$target' — skipping" >&2
+            ;;
+    esac
+done
+
+# Pass 2: package removal in one batch (let pacman resolve deps).
+if [ "${#PKGS[@]}" -gt 0 ]; then
+    echo
+    echo "==> removing packages we installed: ${PKGS[*]}"
+    apply sudo pacman -Rns --noconfirm "${PKGS[@]}"
+fi
+
+# Pass 3: wipe state, unless told otherwise.
+if [ "$KEEP_STATE" = "0" ]; then
+    echo
+    apply rm -rf -- "$NW_OMARCHY_STATE"
+fi
+
+echo
+echo "==> uninstall $([ "$DRY_RUN" = "1" ] && echo '(dry-run) ')complete"
