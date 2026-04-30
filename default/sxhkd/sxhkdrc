@@ -258,7 +258,7 @@ XF86AudioLowerVolume
 XF86AudioMute
     pactl set-sink-mute @DEFAULT_SINK@ toggle
 XF86AudioMicMute
-    pactl set-source-mute @DEFAULT_SOURCE@ toggle
+    nw-omarchy-cmd-mic-mute
 
 XF86MonBrightnessUp
     brightnessctl set +5%

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Toggle microphone mute. On ThinkPads (and any laptop exposing a
+# `platform::micmute` LED) flip the LED to match — same UX omarchy gets
+# via omarchy-cmd-mic-mute-thinkpad, but using pactl + notify-send instead
+# of wpctl + swayosd-client (Wayland-only).
+
+set -e
+
+pactl set-source-mute @DEFAULT_SOURCE@ toggle
+
+if pactl get-source-mute @DEFAULT_SOURCE@ | grep -q 'yes'; then
+    notify-send -u low " Microphone muted"
+    led=1
+else
+    notify-send -u low " Microphone on"
+    led=0
+fi
+
+# brightnessctl device platform::micmute is the ThinkPad LED. Silently
+# no-op on hardware that doesn't expose it.
+brightnessctl --device='platform::micmute' set "$led" >/dev/null 2>&1 || true
