@@ -12,6 +12,23 @@ super + escape        → nw-omarchy-menu System         (jump to System submenu
 super + k             → nw-omarchy-menu-keybindings    (search live sxhkdrc bindings)
 ```
 
+## Polybar entry points
+
+The top bar exposes the same menu surface omarchy's waybar does. Click actions only — polybar 3.x has no hover/tooltip support, so we lean on right-click as a secondary path instead.
+
+| Polybar item | left-click | right-click |
+|---|---|---|
+| Omarchy logo (leftmost) | `nw-omarchy-menu`              | `nw-omarchy-menu System`     |
+| Date (centre)           | `nw-omarchy-menu Update`       | —                            |
+| Audio                   | `nw-omarchy-launch-audio` (wiremix TUI) | `pavucontrol` (GUI mixer)   |
+| Bluetooth               | `nw-omarchy-launch-bluetooth` (bluetui TUI) | `blueman-manager` (GUI) |
+| Wifi                    | `nw-omarchy-launch-wifi` (impala TUI) | `nm-connection-editor` (GUI) |
+| Battery                 | `nw-omarchy-menu Setup` (Power Profile lives there) | — |
+
+Audio also gets `scroll-up`/`scroll-down` for ±5% volume and `click-middle` for mute toggle (parity with omarchy waybar's pulseaudio module).
+
+The omarchy-logo glyph at U+E900 lives in `~/.local/share/fonts/omarchy.ttf` (shipped by omarchy). Polybar references it via `font-3 = omarchy:size=14;3` in `[bar/main]`, and the `[module/omarchy]` block uses `label-font = 4` (1-based) to render the glyph in that font.
+
 ## Driver
 
 Where omarchy uses `walker --dmenu`, we use `rofi -dmenu`. Same stdin/stdout
