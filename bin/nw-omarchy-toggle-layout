@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Cycle bspwm layout on focused desktop (tiled ↔ monocle).
+# Parity with omarchy-hyprland-workspace-layout-toggle.
+exec bspc desktop -l next

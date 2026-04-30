@@ -92,11 +92,17 @@ super + shift + alt + x
 super + space
     rofi -show drun
 
+super + alt + space
+    nw-omarchy-menu
+
+super + Escape
+    nw-omarchy-menu System
+
 super + ctrl + e
     rofi -show emoji
 
 super + k
-    rofi -show keys
+    nw-omarchy-menu-keybindings
 
 #─── universal copy / paste / cut (parity with omarchy clipboard.conf) ─
 # Hyprland uses `sendshortcut`. On X11 we synthesise the key-syms with

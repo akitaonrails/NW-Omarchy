@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# X11 cousin of omarchy-launch-floating-terminal-with-presentation.
+# Adds a one-shot bspwm rule (state=floating, centered) for the next alacritty
+# instance with class org.nw-omarchy.present, then runs the given command in
+# that window. Used by Update / Install menus that want a transient terminal.
+
+set -e
+CLASS="org.nw-omarchy.present"
+bspc rule -a "Alacritty:$CLASS" -o state=floating center=on rectangle=900x600+0+0
+exec setsid alacritty --class "$CLASS" --title "nw-omarchy" -e bash -c "$*; echo; echo 'Done. Press any key to close.'; read -n 1 -s"

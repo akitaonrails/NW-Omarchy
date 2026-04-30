@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Launch the terminal-art screensaver (`tte` from omarchy/bin/omarchy-cmd-screensaver).
+# Parity with omarchy-launch-screensaver but no per-monitor focus dance —
+# X11 just spawns one floating alacritty over the active workspace.
+
+if ! command -v tte >/dev/null 2>&1; then
+    notify-send -u critical "Screensaver requires the 'tte' tool"
+    exit 1
+fi
+
+# Honor the same toggle flag omarchy uses
+if omarchy-toggle-enabled screensaver-off && [[ ${1:-} != "force" ]]; then
+    exit 0
+fi
+
+# Already running?
+pgrep -f 'org\.nw-omarchy\.screensaver' >/dev/null 2>&1 && exit 0
+
+CLASS="org.nw-omarchy.screensaver"
+bspc rule -a "Alacritty:$CLASS" -o state=fullscreen border=off
+exec setsid alacritty --class "$CLASS" \
+    --config-file ~/.local/share/omarchy/default/alacritty/screensaver.toml \
+    -e omarchy-cmd-screensaver

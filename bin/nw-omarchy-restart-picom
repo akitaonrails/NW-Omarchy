@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Restart picom in place.
+pkill -x picom 2>/dev/null || true
+sleep 0.3
+setsid picom --config "$HOME/.config/picom/picom.conf" -b >/dev/null 2>&1 &

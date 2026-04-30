@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Re-exec bspwmrc (re-runs all autostarts, picks up bspc config changes).
+exec bspc wm -r

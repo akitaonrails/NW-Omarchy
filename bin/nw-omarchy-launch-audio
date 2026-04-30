@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Audio control TUI (wiremix). Parity with omarchy-launch-audio.
+exec nw-omarchy-launch-or-focus-tui wiremix

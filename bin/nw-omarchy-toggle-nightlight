@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Toggle redshift on/off (X11 substitute for hyprsunset).
+# Parity with omarchy-toggle-nightlight.
+
+if ! command -v redshift >/dev/null 2>&1; then
+    notify-send -u low "  Nightlight requires redshift (sudo pacman -S redshift)"
+    exit 1
+fi
+
+if pgrep -x redshift >/dev/null 2>&1; then
+    pkill -x redshift
+    notify-send -u low "   Daylight screen temperature"
+else
+    setsid redshift -O 4000 -P >/dev/null 2>&1 &
+    notify-send -u low "  Nightlight screen temperature"
+fi

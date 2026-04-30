@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Toggle idle-lock daemon (xss-lock; X11 parity with omarchy-toggle-idle).
+
+if pgrep -x xss-lock >/dev/null 2>&1; then
+    pkill -x xss-lock
+    notify-send -u low "󱫖    Stop locking computer when idle"
+else
+    setsid xss-lock --transfer-sleep-lock -- nw-omarchy-lock >/dev/null 2>&1 &
+    notify-send -u low "󱫖    Now locking computer when idle"
+fi

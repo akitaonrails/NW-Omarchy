@@ -34,6 +34,7 @@ The uninstaller reads `~/.local/state/nw-omarchy/manifest.tsv` and replays it in
 - [porting-hypr.md](porting-hypr.md) — Hyprland binding/feature → X11 map, omarchy helper substitutions
 - [sddm-picker.md](sddm-picker.md) — adding a session picker to the omarchy SDDM greeter (so `nw-bspwm` is selectable)
 - [theming.md](theming.md) — how bspwm/rofi/polybar pick up the active omarchy theme via `~/.config/omarchy/themed/`
+- [menu.md](menu.md) — `nw-omarchy-menu`: 1-to-1 port of the omarchy system menu (super+alt+space)
 
 ## Health-checking the install
 

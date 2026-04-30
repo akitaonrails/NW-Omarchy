@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Toggle every touchpad's "Device Enabled" libinput property (X11 parity
+# with omarchy-toggle-touchpad).
+
+set -euo pipefail
+
+if ! command -v xinput >/dev/null 2>&1; then
+    echo "xinput not installed (xorg-xinput)" >&2
+    exit 1
+fi
+
+found=0
+xinput list --name-only 2>/dev/null | while IFS= read -r name; do
+    case "$name" in
+        *[Tt]ouchpad*|*[Tt]rackpad*)
+            cur=$(xinput list-props "$name" 2>/dev/null | awk -F: '/Device Enabled/{gsub(/[ \t]/,"",$2); print $2; exit}')
+            if [ "$cur" = "1" ]; then
+                xinput disable "$name"
+                notify-send -u low "󰟸  Touchpad disabled"
+            else
+                xinput enable "$name"
+                notify-send -u low "󰟸  Touchpad enabled"
+            fi
+            found=1
+            ;;
+    esac
+done

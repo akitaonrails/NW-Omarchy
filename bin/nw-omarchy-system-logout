@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Close all bspwm windows, then quit bspwm — returns to SDDM. Parity with
+# omarchy-system-logout's "let apps save state first" pattern.
+
+# Schedule the bspwm quit (detached); apps that intercept WM_DELETE_WINDOW
+# get a moment to save.
+nohup bash -c "sleep 2 && bspc quit" >/dev/null 2>&1 &
+
+# Politely close every node on every desktop.
+for node in $(bspc query -N); do
+    bspc node "$node" -c
+done
+sleep 1

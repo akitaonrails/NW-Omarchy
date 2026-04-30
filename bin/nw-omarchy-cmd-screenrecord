@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+# X11 screen recorder using ffmpeg + x11grab. Same flag surface as
+# omarchy-cmd-screenrecord (subset).
+#
+# Usage:
+#   nw-omarchy-cmd-screenrecord                                  (silent fullscreen)
+#   nw-omarchy-cmd-screenrecord --with-desktop-audio
+#   nw-omarchy-cmd-screenrecord --with-desktop-audio --with-microphone-audio
+#   nw-omarchy-cmd-screenrecord --with-webcam --webcam-device=/dev/video0
+#   nw-omarchy-cmd-screenrecord --stop-recording
+
+set -euo pipefail
+
+PIDFILE="$XDG_RUNTIME_DIR/nw-omarchy-screenrecord.pid"
+[ -f ~/.config/user-dirs.dirs ] && . ~/.config/user-dirs.dirs
+OUTDIR="${OMARCHY_SCREENRECORD_DIR:-${XDG_VIDEOS_DIR:-$HOME/Videos}}"
+mkdir -p "$OUTDIR"
+
+stop_recording() {
+    [ -f "$PIDFILE" ] || return 1
+    local pid
+    pid=$(cat "$PIDFILE")
+    if kill -INT "$pid" 2>/dev/null; then
+        rm -f "$PIDFILE"
+        notify-send -u low "  Screenrecording stopped"
+        return 0
+    fi
+    rm -f "$PIDFILE"
+    return 1
+}
+
+if [ "${1:-}" = "--stop-recording" ]; then
+    stop_recording && exit 0 || exit 1
+fi
+# Already recording? second invocation = stop.
+if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    stop_recording
+    exit 0
+fi
+
+WITH_DESKTOP=0
+WITH_MIC=0
+WITH_WEBCAM=0
+WEBCAM_DEV=/dev/video0
+for a in "$@"; do
+    case "$a" in
+        --with-desktop-audio)  WITH_DESKTOP=1 ;;
+        --with-microphone-audio) WITH_MIC=1 ;;
+        --with-webcam)         WITH_WEBCAM=1 ;;
+        --webcam-device=*)     WEBCAM_DEV="${a#*=}" ;;
+    esac
+done
+
+# Resolve current display geometry (whole X screen).
+GEO=$(xdpyinfo | awk '/dimensions:/ {print $2; exit}')   # e.g. 1920x1200
+[ -z "$GEO" ] && { echo "could not read display geometry" >&2; exit 1; }
+
+OUT="$OUTDIR/screenrecord-$(date +'%Y-%m-%d_%H-%M-%S').mp4"
+
+# Build ffmpeg argv.
+args=(-y -hide_banner -loglevel warning)
+# Video: x11grab on :0
+args+=(-f x11grab -framerate 30 -video_size "$GEO" -i "${DISPLAY:-:0}")
+# Optional desktop audio (PulseAudio default monitor)
+if [ "$WITH_DESKTOP" = 1 ]; then
+    monitor=$(pactl get-default-sink).monitor
+    args+=(-f pulse -i "$monitor")
+fi
+# Optional microphone (PulseAudio default source)
+if [ "$WITH_MIC" = 1 ]; then
+    args+=(-f pulse -i "$(pactl get-default-source)")
+fi
+# Optional webcam overlay (bottom-right, 320x240)
+if [ "$WITH_WEBCAM" = 1 ]; then
+    args+=(-f v4l2 -framerate 30 -video_size 320x240 -i "$WEBCAM_DEV")
+    # Filter graph: scale webcam, overlay on screen
+    args+=(-filter_complex "[1:v]scale=320:240[cam];[0:v][cam]overlay=W-w-20:H-h-20")
+fi
+
+# Audio mixing if both desktop+mic
+if [ "$WITH_DESKTOP" = 1 ] && [ "$WITH_MIC" = 1 ]; then
+    args+=(-filter_complex "[1:a][2:a]amix=inputs=2[a]" -map 0:v -map "[a]")
+fi
+
+args+=(-c:v libx264 -preset veryfast -pix_fmt yuv420p -movflags +faststart "$OUT")
+
+setsid ffmpeg "${args[@]}" >/dev/null 2>&1 &
+echo $! > "$PIDFILE"
+notify-send -u low "  Screenrecording" "$OUT"

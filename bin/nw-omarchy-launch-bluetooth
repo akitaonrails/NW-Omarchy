@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Bluetooth control TUI (bluetui). Parity with omarchy-launch-bluetooth.
+rfkill unblock bluetooth 2>/dev/null || true
+exec nw-omarchy-launch-or-focus-tui bluetui

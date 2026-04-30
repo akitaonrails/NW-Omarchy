@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Toggle bspwm window_gap on focused desktop between 0 (full-bleed) and 4
+# (default). Parity with omarchy-hyprland-window-gaps-toggle.
+g=$(bspc config -d focused window_gap)
+if [ "$g" -gt 0 ]; then
+    bspc config -d focused window_gap 0
+    notify-send -u low "  Window gaps: off"
+else
+    bspc config -d focused window_gap 4
+    notify-send -u low "  Window gaps: on"
+fi

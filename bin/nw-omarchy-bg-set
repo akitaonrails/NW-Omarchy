@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Set wallpaper for current session and update omarchy's
+# ~/.config/omarchy/current/background symlink so a subsequent omarchy-theme-*
+# refresh keeps it.
+#
+# Usage: nw-omarchy-bg-set <path-to-image>
+
+set -euo pipefail
+
+[ "$#" -ge 1 ] || { echo "usage: $(basename "$0") <image>" >&2; exit 1; }
+IMG="$1"
+[ -f "$IMG" ] || { echo "$IMG not found" >&2; exit 1; }
+
+feh --no-fehbg --bg-fill "$IMG"
+
+LINK="$HOME/.config/omarchy/current/background"
+if [ -L "$LINK" ] || [ ! -e "$LINK" ]; then
+    ln -sf "$IMG" "$LINK"
+fi
+
+notify-send -u low "  Background updated" "$(basename "$IMG")"

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Cycle xrandr --scale on the primary output. X11 only does whole-output
+# scaling (1.0 / 1.25 / 1.5 / 2.0); this is the closest cousin of
+# omarchy-hyprland-monitor-scaling-cycle.
+
+set -euo pipefail
+
+OUTPUT=$(xrandr --query | awk '/ connected primary/ {print $1; exit}')
+[ -z "$OUTPUT" ] && OUTPUT=$(xrandr --query | awk '/ connected/ {print $1; exit}')
+[ -z "$OUTPUT" ] && { echo "no connected output" >&2; exit 1; }
+
+STATE="$HOME/.local/state/nw-omarchy/scaling"
+mkdir -p "$(dirname "$STATE")"
+CUR=$(cat "$STATE" 2>/dev/null || echo 1.0)
+case "$CUR" in
+    1.0)  NEXT=1.25 ;;
+    1.25) NEXT=1.5  ;;
+    1.5)  NEXT=2.0  ;;
+    *)    NEXT=1.0  ;;
+esac
+
+xrandr --output "$OUTPUT" --scale "${NEXT}x${NEXT}"
+echo "$NEXT" > "$STATE"
+notify-send -u low "󰍹   Scaling: ${NEXT}×"

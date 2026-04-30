@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# X11 port of omarchy-launch-or-focus-tui.
+# Usage: nw-omarchy-launch-or-focus-tui <cmd> [args...]
+
+set -e
+[ "$#" -ge 1 ] || { echo "usage: $(basename "$0") <cmd> [args...]" >&2; exit 1; }
+
+CLASS="org.nw-omarchy.$(basename "${1%% *}")"
+exec nw-omarchy-launch-or-focus "$CLASS" "nw-omarchy-launch-tui $*"

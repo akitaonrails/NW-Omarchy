@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Shutdown, but close apps first.
+nohup bash -c "sleep 2 && systemctl poweroff --no-wall" >/dev/null 2>&1 &
+for node in $(bspc query -N); do
+    bspc node "$node" -c
+done
+sleep 1

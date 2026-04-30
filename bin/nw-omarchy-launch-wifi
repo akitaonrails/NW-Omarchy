@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Wifi control TUI (impala). Parity with omarchy-launch-wifi.
+rfkill unblock wifi 2>/dev/null || true
+exec nw-omarchy-launch-or-focus-tui impala

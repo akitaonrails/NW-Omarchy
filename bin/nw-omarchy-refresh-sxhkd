@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+NW_OMARCHY_PATH="${NW_OMARCHY_PATH:-$HOME/.local/share/nw-omarchy}"
+NW_OMARCHY_STATE="${NW_OMARCHY_STATE:-$HOME/.local/state/nw-omarchy}"
+DRY_RUN=0
+export NW_OMARCHY_PATH NW_OMARCHY_STATE DRY_RUN PATH="$NW_OMARCHY_PATH/bin:$PATH"
+
+rm -f "$HOME/.config/sxhkd/sxhkdrc"
+bash "$NW_OMARCHY_PATH/install/config.sh"
+exec pkill -USR1 -x sxhkd

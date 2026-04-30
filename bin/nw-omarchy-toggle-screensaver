@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Toggle the on-idle screensaver. We piggyback on omarchy-toggle's flag-file
+# state so our 'screensaver-off' flag co-lives with omarchy's.
+exec omarchy-toggle \
+    --enabled-notification "󱄄   Screensaver disabled" \
+    --disabled-notification "󱄄   Screensaver enabled" \
+    screensaver-off

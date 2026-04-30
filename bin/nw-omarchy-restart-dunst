@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Reload dunst config (parity with omarchy-restart-mako → makoctl reload).
+exec killall -SIGUSR2 dunst

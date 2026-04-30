@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Toggle the internal laptop display on/off via xrandr.
+# Parity with omarchy-hyprland-monitor-internal.
+
+set -euo pipefail
+
+# eDP-* / LVDS-* / DSI-* are the canonical internal-panel connector names on Linux.
+INTERNAL=$(xrandr --query | awk '/^(eDP|LVDS|DSI)/ {print $1; exit}')
+[ -z "$INTERNAL" ] && { echo "no internal panel detected" >&2; exit 1; }
+
+STATE=$(xrandr --query | awk -v out="$INTERNAL" '$1 == out && / connected/ {gsub(out " ", ""); print; exit}')
+case "${1:-toggle}" in
+    on)     xrandr --output "$INTERNAL" --auto ;;
+    off)    xrandr --output "$INTERNAL" --off ;;
+    toggle)
+        if [[ "$STATE" == *primary* || "$STATE" =~ [0-9]+x[0-9]+\+ ]]; then
+            xrandr --output "$INTERNAL" --off
+            notify-send -u low "󰛧   Internal display off"
+        else
+            xrandr --output "$INTERNAL" --auto
+            notify-send -u low "󰛧   Internal display on"
+        fi
+        ;;
+esac

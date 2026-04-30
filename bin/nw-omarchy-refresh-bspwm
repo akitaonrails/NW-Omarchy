@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Re-run install/config.sh's bspwmrc shim block, then bspc wm -r.
+# This lets the menu's "use default config" entry restore a clobbered shim.
+set -euo pipefail
+NW_OMARCHY_PATH="${NW_OMARCHY_PATH:-$HOME/.local/share/nw-omarchy}"
+NW_OMARCHY_STATE="${NW_OMARCHY_STATE:-$HOME/.local/state/nw-omarchy}"
+DRY_RUN=0
+export NW_OMARCHY_PATH NW_OMARCHY_STATE DRY_RUN PATH="$NW_OMARCHY_PATH/bin:$PATH"
+
+# Backup + rewrite the bspwm shim by re-running the relevant chunk of install/config.sh
+# Easier to just delete the existing shim and rerun config.sh, which is idempotent.
+rm -f "$HOME/.config/bspwm/bspwmrc"
+bash "$NW_OMARCHY_PATH/install/config.sh"
+chmod +x "$HOME/.config/bspwm/bspwmrc"
+exec bspc wm -r

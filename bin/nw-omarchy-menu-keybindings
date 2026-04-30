@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# nw-omarchy-menu-keybindings — sxhkd analog of omarchy-menu-keybindings.
+# Parses the active sxhkdrc files and shows them in rofi for search/lookup.
+# Each row: "<chord>   →   <action description>".
+#
+# Sources, in order (later overrides earlier — same precedence sxhkd uses):
+#   ~/.local/share/nw-omarchy/default/sxhkd/sxhkdrc
+#   ~/.config/sxhkd/sxhkdrc
+#
+# Entries are paired (chord on one line, command on the next, separated by
+# blank lines or comments). The preceding `#` comment block on a chord is
+# treated as the description if present; otherwise the command itself is
+# shown.
+
+set -euo pipefail
+
+NW_OMARCHY_PATH="${NW_OMARCHY_PATH:-$HOME/.local/share/nw-omarchy}"
+SOURCES=(
+    "$NW_OMARCHY_PATH/default/sxhkd/sxhkdrc"
+    "$HOME/.config/sxhkd/sxhkdrc"
+)
+
+# Parse one sxhkdrc, emit "chord<TAB>command<TAB>section" lines.
+parse() {
+    local file="$1"
+    [ -f "$file" ] || return 0
+    awk '
+        BEGIN { section = ""; chord = ""; cmd = "" }
+        /^#─.*─*$/ {
+            # Section heading: lines like "#─── apps ───────────────"
+            s = $0
+            sub(/^#─+ */, "", s)
+            sub(/ *─+$/, "", s)
+            sub(/ *─+ *$/, "", s)
+            section = s
+            next
+        }
+        /^[[:space:]]*$/ { chord = ""; cmd = ""; next }
+        /^[[:space:]]*#/ { next }
+        /^[^[:space:]]/ {
+            if (chord && cmd) print chord "\t" cmd "\t" section
+            chord = $0
+            cmd = ""
+            next
+        }
+        /^[[:space:]]+/ {
+            sub(/^[[:space:]]+/, "", $0)
+            cmd = (cmd == "" ? $0 : cmd " ; " $0)
+        }
+        END { if (chord && cmd) print chord "\t" cmd "\t" section }
+    ' "$file"
+}
+
+# Collect, de-duplicate by chord (later sources win).
+declare -A SEEN
+LINES=()
+# Walk in reverse so later sources override earlier (we keep first sighting)
+for ((i=${#SOURCES[@]}-1; i>=0; i--)); do
+    while IFS=$'\t' read -r chord cmd sect; do
+        [ -z "$chord" ] && continue
+        if [ -z "${SEEN[$chord]:-}" ]; then
+            SEEN[$chord]=1
+            LINES+=("$chord"$'\t'"$cmd"$'\t'"$sect")
+        fi
+    done < <(parse "${SOURCES[$i]}")
+done
+
+# Format for display: "<chord>    →    <cmd>    [section]"
+DISPLAY=""
+for line in "${LINES[@]}"; do
+    IFS=$'\t' read -r chord cmd sect <<<"$line"
+    # Truncate long commands
+    if [ "${#cmd}" -gt 60 ]; then cmd="${cmd:0:57}…"; fi
+    if [ -n "$sect" ]; then
+        printf -v row '%-30s  →  %s    [%s]' "$chord" "$cmd" "$sect"
+    else
+        printf -v row '%-30s  →  %s' "$chord" "$cmd"
+    fi
+    DISPLAY+="$row"$'\n'
+done
+
+[ -z "$DISPLAY" ] && { notify-send -u low "No bindings found in sxhkdrc"; exit 0; }
+
+echo -n "$DISPLAY" | rofi -dmenu -i -p "Keybindings…" \
+    -theme-str 'window { width: 900px; } listview { lines: 18; } * { font: "JetBrainsMono Nerd Font 11"; }' \
+    -no-fixed-num-lines \
+    >/dev/null

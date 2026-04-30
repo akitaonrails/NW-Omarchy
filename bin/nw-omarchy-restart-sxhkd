@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Reload sxhkd config in place (no respawn).
+exec pkill -USR1 -x sxhkd
