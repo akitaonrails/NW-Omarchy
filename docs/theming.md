@@ -35,6 +35,7 @@ manifest so uninstall removes them.
 | `bspwm-colors.conf.tpl` | `current/theme/bspwm-colors.conf` | bspwmrc sources it after the static fallback colors |
 | `rofi-colors.rasi.tpl` | `current/theme/rofi-colors.rasi` | `default/rofi/config.rasi` `@import`s it |
 | `polybar-colors.ini.tpl` | `current/theme/polybar-colors.ini` | `default/polybar/config.ini` `include-file`s it after the static `[colors]` |
+| `dunstrc.tpl` | `current/theme/dunstrc` | `~/.config/dunst/dunstrc` is symlinked to it; `nw-omarchy-dunst-watch` (autostarted from bspwmrc) inotify-watches `~/.config/omarchy/current/` and restarts dunst when `omarchy-theme-set` rewrites `theme.name` |
 
 For wallpaper, `bspwmrc` reads `~/.config/omarchy/current/background` (the
 symlink omarchy maintains to the active theme's background image) and
