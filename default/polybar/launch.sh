@@ -4,6 +4,13 @@
 
 set -euo pipefail
 
+# Ensure polybar inherits a PATH that includes both bin dirs, so its click
+# handlers (sh -c …) can find nw-omarchy-launch-* / nw-omarchy-menu / etc.
+# Otherwise: if launch.sh is called from a shell that hasn't set this up
+# (e.g. our refresh helpers or a manual reload), polybar gets a stripped
+# PATH and clicks silently no-op.
+export PATH="$HOME/.local/share/nw-omarchy/bin:$HOME/.local/share/omarchy/bin:$PATH"
+
 CONFIG="${1:-$(dirname "$(readlink -f "$0")")/config.ini}"
 
 pkill -x polybar >/dev/null 2>&1 || true
