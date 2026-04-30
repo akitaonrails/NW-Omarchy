@@ -27,6 +27,20 @@ The top bar exposes the same menu surface omarchy's waybar does. Click actions o
 
 Audio also gets `scroll-up`/`scroll-down` for ±5% volume and `click-middle` for mute toggle (parity with omarchy waybar's pulseaudio module).
 
+### How click bindings are wired
+
+Polybar 3.7's module-level `click-left =` is unreliable across module types — internal modules (pulseaudio, network, battery) sometimes ignore it in favour of a hard-coded default (e.g. pulseaudio left-click → toggle-mute). We use polybar's per-segment **action-tag markup inside the format/label string** for the left-click everywhere:
+
+```
+format-volume = %{A1:nw-omarchy-launch-audio:}<ramp-volume>  <label-volume>%{A}
+```
+
+`%{A1:cmd:}…%{A}` wraps the rendered output in a clickable region that always overrides defaults. Single-button stacking works reliably; nesting three (`%{A1}%{A2}%{A3}`) seems to be miss-parsed in 3.7.x, so we pair the action-tag left-click with module-level `click-right` / `click-middle` for the secondary buttons.
+
+### Setup TUIs open as floating windows
+
+The TUIs `nw-omarchy-launch-{audio,wifi,bluetooth,about}` open via alacritty with a class like `org.nw-omarchy.wiremix`. `bspwmrc` declares `bspc rule -a` entries for each of those classes (`state=floating center=on rectangle=900x600`), matching the floating-overlay UX omarchy gets in Hyprland.
+
 The omarchy-logo glyph at U+E900 lives in `~/.local/share/fonts/omarchy.ttf` (shipped by omarchy). Polybar references it via `font-3 = omarchy:size=14;3` in `[bar/main]`, and the `[module/omarchy]` block uses `label-font = 4` (1-based) to render the glyph in that font.
 
 ## Driver

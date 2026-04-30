@@ -64,6 +64,15 @@ bspc rule -a Nm-connection-editor   state=floating
 bspc rule -a 1Password              state=floating
 bspc rule -a Galculator             state=floating
 
+# Setup TUIs launched by nw-omarchy-launch-{audio,wifi,bluetooth,about}:
+# alacritty windows tagged with org.nw-omarchy.<tool> WM_CLASS. We make them
+# float, centred, ~900x600 — same UX omarchy gets via a hyprland floating
+# windowrule in default/hypr/looknfeel.conf.
+bspc rule -a "org.nw-omarchy.wiremix"   state=floating center=on rectangle=900x600+0+0
+bspc rule -a "org.nw-omarchy.impala"    state=floating center=on rectangle=900x600+0+0
+bspc rule -a "org.nw-omarchy.bluetui"   state=floating center=on rectangle=900x600+0+0
+bspc rule -a "org.nw-omarchy.fastfetch" state=floating center=on rectangle=900x600+0+0
+
 #─── autostart (idempotent — kill existing, restart) ────────────────
 pkill -x sxhkd              >/dev/null 2>&1; sleep 0.05
 pkill -x picom              >/dev/null 2>&1; sleep 0.05
