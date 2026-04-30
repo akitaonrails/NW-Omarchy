@@ -7,10 +7,24 @@ cross-stack) or an X11 cousin we ship in `bin/`.
 ## Bindings
 
 ```
-super + alt + space   → nw-omarchy-menu                (top-level)
-super + escape        → nw-omarchy-menu System         (jump to System submenu — power actions)
-super + k             → nw-omarchy-menu-keybindings    (search live sxhkdrc bindings)
+super + space          → nw-omarchy-launcher           (pinned-apps cheat-sheet — chord shown next to each)
+super + shift + space  → rofi -show drun               (full app list — escape hatch)
+super + alt + space    → nw-omarchy-menu               (top-level system menu)
+super + escape         → nw-omarchy-menu System        (jump to System submenu — power actions)
+super + k              → nw-omarchy-menu-keybindings   (search live sxhkdrc bindings)
 ```
+
+`nw-omarchy-launcher` (super+space) parses the `apps` and `webapp …` sections of sxhkdrc and shows each binding as `<Label>     <chord>` in rofi. Type to filter, Enter to fire the bound command. Each binding's label comes from its leading `# Label` comment line.
+
+To pin a new app to the launcher, add it under either section in `default/sxhkd/sxhkdrc` (or override in `~/.config/sxhkd/sxhkdrc`):
+
+```
+# Slack
+super + shift + s
+    nw-omarchy-launch-or-focus Slack
+```
+
+The `# Slack` comment is what rofi shows.
 
 ## Polybar entry points
 

@@ -11,85 +11,120 @@
 # use wmctrl/xdotool instead of hyprctl.
 
 #─── apps ─────────────────────────────────────────────────────────────
-# Open terminal in the focused window's cwd if it's a terminal, else $HOME.
+# Each app binding here gets a leading `# Label` comment. nw-omarchy-launcher
+# (super+space) parses these into a rofi-driven cheat-sheet picker — the
+# label is what you see in the popup; the chord is shown next to it.
+
+# Terminal
 super + Return
     sh -c 'alacritty --working-directory "$(nw-omarchy-cmd-terminal-cwd)"'
 
+# Tmux
 super + alt + Return
     alacritty -e bash -c "tmux attach || tmux new -s Work"
 
+# Browser
 super + shift + Return
     nw-omarchy-launch-browser
 
+# Browser
 super + b
     nw-omarchy-launch-browser
 
+# Browser
 super + shift + b
     nw-omarchy-launch-browser
 
+# Browser (private)
 super + shift + alt + b
     nw-omarchy-launch-browser --private
 
+# Files
 super + shift + f
     nw-omarchy-launch-or-focus nautilus "nautilus --new-window"
 
+# Files (cwd)
 super + shift + alt + f
     sh -c 'nautilus --new-window "$(nw-omarchy-cmd-terminal-cwd)"'
 
+# Editor
 super + shift + n
     nw-omarchy-launch-editor
 
+# Docker
 super + shift + d
     nw-omarchy-launch-tui lazydocker
 
+# Spotify
 super + shift + m
     nw-omarchy-launch-or-focus spotify
 
+# Signal
 super + shift + g
     nw-omarchy-launch-or-focus signal-desktop
 
+# Obsidian
 super + shift + o
     nw-omarchy-launch-or-focus obsidian "obsidian --disable-gpu"
 
+# Typora
 super + shift + w
     typora
 
+# 1Password
 super + shift + slash
     1password
 
 #─── webapp bindings (Chrome --app= windows; parity with hypr) ────────
+# ChatGPT
 super + shift + a
     nw-omarchy-launch-webapp "https://chatgpt.com"
 
+# Grok
 super + shift + alt + a
     nw-omarchy-launch-webapp "https://grok.com"
 
+# Calendar
 super + shift + c
     nw-omarchy-launch-webapp "https://app.hey.com/calendar/weeks/"
 
+# Email
 super + shift + e
     nw-omarchy-launch-webapp "https://app.hey.com"
 
+# YouTube
 super + shift + y
     nw-omarchy-launch-webapp "https://youtube.com/"
 
+# WhatsApp
 super + shift + alt + g
     nw-omarchy-launch-or-focus-webapp WhatsApp "https://web.whatsapp.com/"
 
+# Google Messages
 super + shift + ctrl + g
     nw-omarchy-launch-or-focus-webapp "Google Messages" "https://messages.google.com/web/conversations"
 
+# Google Photos
 super + shift + p
     nw-omarchy-launch-or-focus-webapp "Google Photos" "https://photos.google.com/"
 
+# X.com
 super + shift + x
     nw-omarchy-launch-webapp "https://x.com/"
 
+# X.com (compose)
 super + shift + alt + x
     nw-omarchy-launch-webapp "https://x.com/compose/post"
 
 #─── menus / launcher ─────────────────────────────────────────────────
+# Pinned-apps cheat-sheet: shows only apps with a custom binding (the
+# entries above), each labelled with its chord. Type to filter by name.
 super + space
+    nw-omarchy-launcher
+
+# Full drun: lists every .desktop entry on the system (escape hatch for
+# the rare app you haven't pinned a chord for).
+super + shift + space
     rofi -show drun
 
 super + alt + space

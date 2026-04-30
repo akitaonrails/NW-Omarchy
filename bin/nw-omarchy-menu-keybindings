@@ -34,6 +34,12 @@ parse() {
     local file="$1"
     [ -f "$file" ] || return 0
     awk '
+        # `desc` is the description for the CURRENT chord (claimed by the
+        # chord line from `pending_desc`). `pending_desc` accumulates the
+        # comment lines that precede the next chord. Splitting them avoids
+        # flush() either nuking desc before it's used or leaking it to the
+        # wrong chord (this was the bug that left labels showing the raw
+        # command instead of the human description).
         function flush() {
             if (chord != "" && cmd != "") {
                 label = (desc != "" ? desc : cmd)
@@ -41,7 +47,7 @@ parse() {
             }
             chord = ""; cmd = ""; desc = ""
         }
-        BEGIN { section = ""; chord = ""; cmd = ""; desc = "" }
+        BEGIN { section = ""; chord = ""; cmd = ""; desc = ""; pending_desc = "" }
 
         # Section heading: lines like "#─── apps ─────"
         /^#─.*─*$/ {
@@ -50,6 +56,7 @@ parse() {
             sub(/^#─+ */, "", s)
             sub(/ *─+ *$/, "", s)
             section = s
+            pending_desc = ""
             next
         }
 
@@ -58,22 +65,23 @@ parse() {
             next
         }
 
-        # Plain comment (non-section). Treat as description for the next
-        # chord. Multi-line comments collapse with " · " separators.
+        # Plain comment (non-section). Buffer as the next chord's description.
+        # Multi-line comments collapse with " · " separators.
         /^[[:space:]]*#/ {
             line = $0
             sub(/^[[:space:]]*#[[:space:]]*/, "", line)
             if (line != "") {
-                desc = (desc != "" ? desc " · " line : line)
+                pending_desc = (pending_desc != "" ? pending_desc " · " line : line)
             }
             next
         }
 
-        # Chord (non-whitespace at column 1, not a comment)
+        # Chord (non-whitespace at column 1, not a comment).
         /^[^[:space:]]/ {
             flush()
             chord = $0
             cmd = ""
+            desc = pending_desc; pending_desc = ""
             next
         }
 

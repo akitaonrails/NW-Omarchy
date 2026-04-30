@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+# nw-omarchy-launcher — pinned-apps cheat-sheet launcher.
+#
+# Bound to super+space. Parses the `apps` and `webapp bindings` sections
+# of the active sxhkdrc files and shows each as
+#     <Label>     <chord>
+# in rofi. Type to filter by label, Enter to fire the bound command.
+#
+# Sources (later wins):
+#   ~/.local/share/nw-omarchy/default/sxhkd/sxhkdrc
+#   ~/.config/sxhkd/sxhkdrc
+#
+# Each binding's label comes from its leading `# Label` comment line; if
+# missing, the command itself is shown.
+
+set -euo pipefail
+
+NW_OMARCHY_PATH="${NW_OMARCHY_PATH:-$HOME/.local/share/nw-omarchy}"
+SOURCES=(
+    "$NW_OMARCHY_PATH/default/sxhkd/sxhkdrc"
+    "$HOME/.config/sxhkd/sxhkdrc"
+)
+
+# Parse one sxhkdrc, emit "chord<TAB>label<TAB>cmd" for bindings inside
+# the `apps` and `webapp ...` sections only.
+parse() {
+    local file="$1"
+    [ -f "$file" ] || return 0
+    awk '
+        # `desc` is the description for the CURRENT chord (set when the chord
+        # line is read). `pending_desc` is the description we are accumulating
+        # from comment lines, waiting for the next chord to claim it. Without
+        # the pending slot, flush() would either reset desc too early (when a
+        # chord line is read) or leak desc across to the wrong chord.
+        function flush() {
+            if (chord != "" && cmd != "" && keep) {
+                label = (desc != "" ? desc : cmd)
+                print chord "\t" label "\t" cmd
+            }
+            chord = ""; cmd = ""; desc = ""
+        }
+        BEGIN { section = ""; chord = ""; cmd = ""; desc = ""; pending_desc = ""; keep = 0 }
+
+        /^#─.*─*$/ {
+            flush()
+            s = $0
+            sub(/^#─+ */, "", s); sub(/ *─+ *$/, "", s)
+            section = s
+            keep = (section ~ /^apps$/ || section ~ /^webapp/) ? 1 : 0
+            pending_desc = ""
+            next
+        }
+
+        /^[[:space:]]*$/ { flush(); next }
+
+        /^[[:space:]]*#/ {
+            line = $0
+            sub(/^[[:space:]]*#[[:space:]]*/, "", line)
+            if (line != "") pending_desc = line   # last comment wins
+            next
+        }
+
+        /^[^[:space:]]/ {
+            flush()
+            chord = $0; cmd = ""
+            desc = pending_desc; pending_desc = ""
+            next
+        }
+
+        /^[[:space:]]+/ {
+            line = $0
+            sub(/^[[:space:]]+/, "", line)
+            cmd = (cmd == "" ? line : cmd " ; " line)
+            next
+        }
+
+        END { flush() }
+    ' "$file"
+}
+
+declare -A SEEN
+declare -A CMD_BY_LINE
+LINES=()
+for ((i=${#SOURCES[@]}-1; i>=0; i--)); do
+    while IFS=$'\t' read -r chord label cmd; do
+        [ -z "$chord" ] && continue
+        if [ -z "${SEEN[$chord]:-}" ]; then
+            SEEN[$chord]=1
+            printf -v row '%-26s  %s' "$label" "$chord"
+            LINES+=("$row")
+            CMD_BY_LINE[$row]="$cmd"
+        fi
+    done < <(parse "${SOURCES[$i]}")
+done
+
+if [ "${#LINES[@]}" -eq 0 ]; then
+    notify-send -u low "No pinned app bindings found" \
+        "Add a leading '# Label' comment to bindings in the apps / webapp sections."
+    exit 0
+fi
+
+# `output` here intentionally is NOT named DISPLAY — that variable name
+# would shadow the X11 $DISPLAY env var and rofi would try to connect to
+# a long string of binding names instead of :0 (the bug that made super+K
+# silently fail before).
+output=$(printf '%s\n' "${LINES[@]}")
+choice=$(echo -n "$output" | rofi -dmenu -i -p "Launch…" \
+    -theme-str 'window { width: 700px; } listview { lines: 12; } * { font: "JetBrainsMono Nerd Font Mono 18"; }' \
+    -no-fixed-num-lines)
+
+[ -z "$choice" ] && exit 0
+
+cmd="${CMD_BY_LINE[$choice]:-}"
+[ -z "$cmd" ] && exit 0
+
+# Detach from sxhkd / rofi parent so the launched app survives them.
+exec setsid sh -c "$cmd" >/dev/null 2>&1 &
