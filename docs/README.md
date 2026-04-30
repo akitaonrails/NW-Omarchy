@@ -38,6 +38,7 @@ The uninstaller reads `~/.local/state/nw-omarchy/manifest.tsv` and replays it in
 - [gaps.md](gaps.md) — what's at parity vs vanilla omarchy, what's intentionally dropped, what's still worth building
 - [services.md](services.md) — audit of every omarchy systemd unit / hook, with verdict on whether nw-omarchy needs to wire it
 - [clipboard.md](clipboard.md) — what works (`ctrl+c/v/x`, alacritty CLIPBOARD overrides, `super+ctrl+v` history) and why omarchy's `super+c/v/x` synthesis didn't survive the X11 port
+- [xlibre.md](xlibre.md) — opt-in migration from xorg-server to XLibre via `nw-omarchy-xlibre-migrate`
 
 ## Health-checking the install
 
@@ -49,24 +50,20 @@ Lints the live system in eight sections (Packages, Manifest, SDDM picker, Theme 
 
 ## Gotchas worth knowing
 
-### XLibre skipped by default
+### XLibre — opt-in, not auto-installed
 
-The original plan was bspwm + picom + **XLibre**. It fell apart on inspection of the actual AUR packaging:
+bspwm runs on stock `xorg-server` by default. **XLibre is supported as an opt-in replacement** via the binary repo packages from `x11libre.net`, which declare proper `provides=('xorg-server' …)` and don't conflict with `xorg-xwayland` — so a clean swap coexists with omarchy's hyprland session.
 
-- `xlibre-xserver-common-git` declares `Conflicts=xorg-server-common` but does **not** declare `Provides=xorg-server-common`.
-- `xorg-xwayland` depends on `xorg-server-common`.
-- `hyprland` depends on `xorg-xwayland`.
+(The historical blocker was specifically the `xlibre-xserver-common-git` AUR package, which declared `Conflicts=xorg-server-common` without the matching `Provides=`. The official `[xlibre]` binary repo packages don't have that flaw.)
 
-So pacman cannot install XLibre alongside Hyprland — installing it would force-remove `xorg-server-common` → `xorg-xwayland` → `hyprland` (the very session this project is supposed to sit *next* to). XLibre is a *replacement* for Xorg, not an addition.
-
-Decision: bspwm runs on stock Xorg. Visually and functionally equivalent for our purposes — XLibre's wins are server-side modernization, none of which the bspwm-on-X11 stack can detect. The `xlibre-xserver-git` line is commented out in `packages/nw-omarchy.packages`; `install/xlibre.sh` is now diagnostic-only.
-
-If you ever run nw-omarchy on a machine *without* Hyprland and want XLibre anyway:
+To migrate:
 ```bash
-yay -S xlibre-xserver-git
-nw-omarchy-track record pkg xlibre-xserver-git    # so uninstall sees it
+nw-omarchy-xlibre-migrate            # preview (dry-run)
+nw-omarchy-xlibre-migrate --apply    # commit
 ```
-You'll get a pacman replace prompt; answer `y` to swap xorg-server-common.
+Idempotent. Revert with `--revert --apply`. Full rationale, compatibility matrix, and rollback plan: [docs/xlibre.md](xlibre.md).
+
+`install/xlibre.sh` (run during the regular install pipeline) is diagnostic-only: it just reports whether you've migrated.
 
 ### picom-FT-Labs animations syntax has drifted
 

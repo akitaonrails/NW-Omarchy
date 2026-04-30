@@ -4,7 +4,7 @@ A secondary login option for Omarchy: **bspwm + picom (FT-Labs)** on Xorg, layer
 
 > "Not Wayland Omarchy." Sits parallel to Hyprland — your Omarchy session is untouched.
 
-XLibre was the original X-server target but it can't coexist with Hyprland on the same machine — see [docs/README.md](docs/README.md#xlibre-skipped-by-default). On a Hyprland-free machine you can opt in manually after install.
+XLibre is supported as an opt-in X server replacement (see [docs/xlibre.md](docs/xlibre.md)) via the binary repo at `x11libre.net`, which coexists cleanly with omarchy's hyprland. The default install leaves `xorg-server` in place; run `nw-omarchy-xlibre-migrate --apply` to swap.
 
 ## What this is not
 
@@ -43,6 +43,7 @@ nw-omarchy-doctor        # lint live install (packages, themes, daemons, ...)
 - [docs/architecture.md](docs/architecture.md) — directory layout and conventions
 - [docs/gaps.md](docs/gaps.md) — parity with vanilla omarchy: what's done, what's intentionally dropped, what's still worth building
 - [docs/porting-hypr.md](docs/porting-hypr.md) — Hyprland binding/feature → X11 map
+- [docs/xlibre.md](docs/xlibre.md) — opt-in XLibre migration: what it touches, compatibility, revert recipe
 
 ## Repo layout
 

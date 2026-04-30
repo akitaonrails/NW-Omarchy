@@ -1,19 +1,21 @@
 #!/usr/bin/env bash
-# XLibre is intentionally NOT installed by default. This step is just a
-# diagnostic / informational note. See packages/nw-omarchy.packages and
-# docs/README.md for the rationale.
+# Diagnostic stub. The actual XLibre migration is opt-in and lives in
+# bin/nw-omarchy-xlibre-migrate — see docs/xlibre.md for the full story.
+#
+# Replacing the X server is riskier than anything else in this install
+# pipeline, so it's intentionally NOT auto-run. This step just reports
+# the current state of the X server choice.
 
 set -euo pipefail
 
-if pacman -Qq xlibre-xserver-git >/dev/null 2>&1; then
-    echo "xlibre: xlibre-xserver-git installed (manually) — bspwm session will use it."
-    if pacman -Qq hyprland >/dev/null 2>&1; then
-        echo "xlibre: WARNING — hyprland is also installed. Sessions may conflict."
-    fi
+if pacman -Qq xlibre-xserver >/dev/null 2>&1; then
+    echo "xlibre: xlibre-xserver installed — your bspwm session will use XLibre."
+elif pacman -Qq xlibre-xserver-git >/dev/null 2>&1; then
+    echo "xlibre: xlibre-xserver-git (AUR) installed — your bspwm session will use XLibre."
 else
-    echo "xlibre: skipped (not in default package list)."
-    echo "        Reason: xlibre-xserver-common-git Conflicts=xorg-server-common"
-    echo "        without Provides=, so installing it would force-remove"
-    echo "        xorg-xwayland → hyprland."
-    echo "        bspwm runs fine on stock Xorg. See docs/README.md."
+    echo "xlibre: not installed (default). bspwm session uses xorg-server."
+    echo "        To switch to XLibre, run:"
+    echo "          nw-omarchy-xlibre-migrate            # preview"
+    echo "          nw-omarchy-xlibre-migrate --apply    # commit"
+    echo "        See docs/xlibre.md for the full rationale and revert recipe."
 fi
