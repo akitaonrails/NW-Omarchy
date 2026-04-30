@@ -125,6 +125,12 @@ if command -v clipmenud >/dev/null 2>&1; then
     clipmenud >/dev/null 2>&1 &
 fi
 
+# Low-battery notifier — reuses omarchy's existing systemd user timer
+# (~/.config/systemd/user/omarchy-battery-monitor.timer). Idempotent: start
+# is a no-op if already running. systemctl --user gracefully no-ops if the
+# unit file isn't present (e.g. desktop with no battery).
+systemctl --user start omarchy-battery-monitor.timer >/dev/null 2>&1 || true
+
 # notifications
 dunst &
 
