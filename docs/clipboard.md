@@ -26,6 +26,16 @@ The fundamental problem: when sxhkd fires the binding, the user is still physica
 
 We don't fully understand why `xdotool type` works direct but not via the binding — focus shift, sxhkd grab interaction with XTestFakeKeyEvent, or something deeper in the X event timing. Wayland sidesteps this entirely with `wlr-virtual-keyboard` (separate device, separate state); X11 has only XTest, which shares state with the real keyboard.
 
+For reference — omarchy uses Hyprland's `sendshortcut` dispatcher (`bindd = SUPER, V, …, sendshortcut, SHIFT, Insert,`). That's a Hyprland-specific feature, not a Wayland protocol: Hyprland is the compositor and writes the per-client `wl_keyboard.modifiers` state directly, so the synthetic chord ships with a clean modifier mask regardless of what the user is physically holding. There's no equivalent on X11 short of becoming the X server.
+
+## Future angle to try: ydotool
+
+`ydotool` is uinput-based. It creates a separate virtual kernel input device and feeds events through evdev rather than XTest. The X server may track modifier state per-device, in which case synthetic ctrl+v from the ydotool device wouldn't merge with the physical keyboard's still-held super. Worth a 30-min experiment before declaring this dead. Steps:
+
+1. Install `ydotool` + `ydotoold` (the daemon must run for ydotool to talk to uinput without root each call).
+2. Re-add the `super + v` binding pointing at `ydotool key 29:1 47:1 47:0 29:0` (ctrl down, v down, v up, ctrl up) instead of xdotool.
+3. Test in brave / alacritty / rofi the same way we did before.
+
 If you crack it, PRs welcome.
 
 ## Diagnostic recipes
