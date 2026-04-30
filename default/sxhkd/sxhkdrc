@@ -144,31 +144,28 @@ super + k
     nw-omarchy-menu-keybindings
 
 #─── universal copy / paste / cut (parity with omarchy clipboard.conf) ─
-# Hyprland uses `sendshortcut`. On X11 we synthesise the key-syms with
-# xdotool. --clearmodifiers releases super (still held by the user) before
-# the synthetic press, so apps see a clean ctrl+Insert / ctrl+v / ctrl+x
-# instead of super+ctrl+…
+# Routed through nw-omarchy-send-key, which force-releases super_l/r
+# before synthesising the chord. xdotool --clearmodifiers alone is
+# unreliable while the user is still physically holding super during
+# the sxhkd fire — the synthetic ctrl+v can leak super into the focused
+# app, which most apps don't bind to paste.
 #
 # Asymmetric on purpose:
 #   super+c → ctrl+Insert  — terminal-safe (ctrl+c is SIGINT). Browsers /
 #                            GTK apps interpret ctrl+Insert as CLIPBOARD copy.
 #   super+v → ctrl+v        — universal CLIPBOARD paste in all GUI apps.
-#                            shift+Insert (omarchy's choice) reads from
-#                            PRIMARY in many browsers, which is the X
-#                            mouse-highlight buffer — different from the
-#                            CLIPBOARD super+c writes to. Our alacritty
-#                            override binds ctrl+v → Paste so terminals
-#                            participate.
+#                            Our alacritty override binds Ctrl+V → Paste
+#                            so terminals participate too.
 #   super+x → ctrl+x        — universal cut. In bash readline this is
 #                            kill-line; same trade omarchy makes.
 super + c
-    xdotool key --clearmodifiers ctrl+Insert
+    nw-omarchy-send-key ctrl+Insert
 
 super + v
-    xdotool key --clearmodifiers ctrl+v
+    nw-omarchy-send-key ctrl+v
 
 super + x
-    xdotool key --clearmodifiers ctrl+x
+    nw-omarchy-send-key ctrl+x
 
 #─── clipboard history (rofi-backed; CM_LAUNCHER=rofi set in bspwmrc) ──
 super + ctrl + v
