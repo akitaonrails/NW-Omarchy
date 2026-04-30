@@ -1,35 +1,50 @@
 #!/usr/bin/env bash
 # nw-omarchy-paste — type CLIPBOARD content into the focused window.
 #
-# Why not synthesise ctrl+v?  Because the user is physically holding
-# super at the moment sxhkd fires our binding. xdotool's keyup Super_L /
-# --clearmodifiers do release super at the X server's view, but the
-# kernel (evdev) immediately re-asserts super-down because the physical
-# key is still pressed. Result: the synthetic ctrl+v arrives at the
-# focused app as super+ctrl+v, which most apps don't bind to anything.
-# (Verified live in alacritty: keyup Super_L Super_R + xdotool key
-# ctrl+v with --clearmodifiers, both exit 0, but no paste.)
+# The pain we work around: when sxhkd fires this binding mid-press, the
+# user is still physically holding super. xdotool runs MUCH faster than a
+# human releases a key, so the synthetic events arrive at the focused app
+# with state=Mod4Mask. Apps reject the input or interpret it as a
+# super+char shortcut (rarely bound) and ignore.
 #
-# `xdotool type` sends each character as a KeyPress event with the
-# event's state field set to 0 — i.e. "no modifiers held" in the event
-# itself, regardless of what evdev says. Apps that read the event's
-# state field (the vast majority — browsers, GTK, Qt, Electron, rofi,
-# alacritty, …) accept the chars as plain input.
-#
-# Trade-off: rich-text clipboard pastes as plaintext (same as omarchy's
-# shift+Insert path on Wayland). Newlines in clipboard get typed as
-# Return — in a terminal that means lines execute. Use clipmenu
-# (super+ctrl+v) for multi-line content into a terminal, or use the
-# terminal's native ctrl+shift+v.
+# Solution: actively poll xinput query-state on the master keyboard
+# device until no modifier keycode is held, then fire. 20ms poll
+# granularity → imperceptible. 1s overall timeout in case the user
+# really does want to hold super forever.
 
 set -e
 
 content=$(xclip -selection clipboard -o 2>/dev/null) || exit 0
 [ -n "$content" ] || exit 0
 
-# Let the user release super before we start typing — otherwise the first
-# synthetic char might race the still-held super and pick it up. 50ms is
-# imperceptible; 0ms occasionally swallows the first char.
-sleep 0.05
+KBD_ID=$(xinput list --short 2>/dev/null \
+    | awk '/keyboard.*master/ {
+            if (match($0, /id=[0-9]+/))
+                print substr($0, RSTART+3, RLENGTH-3); exit }')
+
+# Standard x86 keycodes for modifier keys:
+#   37,105  Control_L / Control_R
+#   50,62   Shift_L   / Shift_R
+#   64,108  Alt_L     / Alt_R
+#   133,134 Super_L   / Super_R
+# Any of these being =down means we'd leak that modifier into the typed
+# events.
+modifier_held() {
+    [ -z "$KBD_ID" ] && return 1
+    xinput query-state "$KBD_ID" 2>/dev/null \
+        | grep -qE 'key\[(37|50|62|64|105|108|133|134)\]=down'
+}
+
+# Wait up to 1s (50 × 20ms) for all modifiers to lift. If the device
+# scan failed (KBD_ID empty), this loop short-circuits immediately and
+# the next-best fallback (synthetic keyup) carries us.
+for _ in $(seq 1 50); do
+    modifier_held || break
+    sleep 0.02
+done
+
+# Belt-and-braces synthetic releases — only takes effect if X-server's
+# state still thinks super is down despite our poll.
+xdotool keyup Super_L Super_R 2>/dev/null || true
 
 xdotool type --clearmodifiers --delay 0 -- "$content"
