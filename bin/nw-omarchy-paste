@@ -1,41 +1,35 @@
 #!/usr/bin/env bash
-# nw-omarchy-paste — universal CLIPBOARD paste for super+v.
+# nw-omarchy-paste — type CLIPBOARD content into the focused window.
 #
-# Bypasses xdotool key ctrl+v synthesis (which works for some apps but
-# is unreliable: when sxhkd fires the binding mid-press, the synthetic
-# event sometimes leaks super into the focused app, and a subset of apps
-# refuse to bind super+ctrl+v to paste).
+# Why not synthesise ctrl+v?  Because the user is physically holding
+# super at the moment sxhkd fires our binding. xdotool's keyup Super_L /
+# --clearmodifiers do release super at the X server's view, but the
+# kernel (evdev) immediately re-asserts super-down because the physical
+# key is still pressed. Result: the synthetic ctrl+v arrives at the
+# focused app as super+ctrl+v, which most apps don't bind to anything.
+# (Verified live in alacritty: keyup Super_L Super_R + xdotool key
+# ctrl+v with --clearmodifiers, both exit 0, but no paste.)
 #
-# Two strategies, dispatched by focused-window class:
+# `xdotool type` sends each character as a KeyPress event with the
+# event's state field set to 0 — i.e. "no modifiers held" in the event
+# itself, regardless of what evdev says. Apps that read the event's
+# state field (the vast majority — browsers, GTK, Qt, Electron, rofi,
+# alacritty, …) accept the chars as plain input.
 #
-#   Terminals:           synth Ctrl+Shift+V
-#                        — universal paste binding in alacritty / kitty /
-#                          ghostty / xterm. Honours bracketed-paste mode
-#                          so multi-line clipboard content doesn't
-#                          execute as commands.
-#
-#   Everything else:     xdotool type --file - (clipboard piped in)
-#                        — sends each char as a synthetic input event,
-#                          bypassing keyboard-binding interpretation.
-#                          Works in browsers / GTK / Qt / Electron /
-#                          rofi input / etc.
-#
-# Trade-off: rich clipboard (HTML, images) becomes plaintext. Same trade
-# omarchy makes via shift+Insert.
+# Trade-off: rich-text clipboard pastes as plaintext (same as omarchy's
+# shift+Insert path on Wayland). Newlines in clipboard get typed as
+# Return — in a terminal that means lines execute. Use clipmenu
+# (super+ctrl+v) for multi-line content into a terminal, or use the
+# terminal's native ctrl+shift+v.
 
 set -e
 
-xdotool keyup Super_L Super_R 2>/dev/null || true
+content=$(xclip -selection clipboard -o 2>/dev/null) || exit 0
+[ -n "$content" ] || exit 0
 
-class=$(xdotool getactivewindow getwindowclassname 2>/dev/null || echo "")
+# Let the user release super before we start typing — otherwise the first
+# synthetic char might race the still-held super and pick it up. 50ms is
+# imperceptible; 0ms occasionally swallows the first char.
+sleep 0.05
 
-case "$class" in
-    Alacritty|kitty|*ghostty*|*xterm*|*urxvt*|*foot*|*Terminal*)
-        xdotool key --clearmodifiers ctrl+shift+v
-        ;;
-    *)
-        content=$(xclip -selection clipboard -o 2>/dev/null) || exit 0
-        [ -n "$content" ] || exit 0
-        xdotool type --clearmodifiers --delay 0 -- "$content"
-        ;;
-esac
+xdotool type --clearmodifiers --delay 0 -- "$content"

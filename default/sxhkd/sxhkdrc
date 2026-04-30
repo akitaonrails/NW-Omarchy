@@ -167,7 +167,7 @@ super + c
 # synthesis path which silently failed in browsers/rofi for the
 # user's setup.
 super + v
-    nw-omarchy-send-key ctrl+v
+    nw-omarchy-paste
 
 super + x
     nw-omarchy-send-key ctrl+x
