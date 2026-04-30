@@ -86,7 +86,7 @@ for ((i=${#SOURCES[@]}-1; i>=0; i--)); do
         [ -z "$chord" ] && continue
         if [ -z "${SEEN[$chord]:-}" ]; then
             SEEN[$chord]=1
-            printf -v row '%-26s  %s' "$label" "$chord"
+            printf -v row '%-18s    %s' "$label" "$chord"
             LINES+=("$row")
             CMD_BY_LINE[$row]="$cmd"
         fi
@@ -105,7 +105,7 @@ fi
 # silently fail before).
 output=$(printf '%s\n' "${LINES[@]}")
 choice=$(echo -n "$output" | rofi -dmenu -i -p "Launch…" \
-    -theme-str 'window { width: 700px; } listview { lines: 12; } * { font: "JetBrainsMono Nerd Font Mono 18"; }' \
+    -theme-str 'window { width: 880px; } listview { lines: 12; } * { font: "JetBrainsMono Nerd Font Mono 18"; }' \
     -no-fixed-num-lines)
 
 [ -z "$choice" ] && exit 0
