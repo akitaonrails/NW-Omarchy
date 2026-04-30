@@ -120,6 +120,21 @@ if command -v libinput-gestures >/dev/null 2>&1; then
     libinput-gestures >/dev/null 2>&1 &
 fi
 
+# Idle timers — parity with omarchy hypridle:
+#   5 min  → tte terminal-art screensaver (cancelled on activity)
+#  10 min  → loginctl lock-session, which xss-lock catches and fires nw-omarchy-lock
+# `--not-when-fullscreen` so video / presentations aren't interrupted.
+pkill -f xidlehook >/dev/null 2>&1 || true
+if command -v xidlehook >/dev/null 2>&1; then
+    xidlehook \
+        --not-when-fullscreen \
+        --timer 300 'nw-omarchy-launch-screensaver force' \
+                    'pkill -f org.nw-omarchy.screensaver' \
+        --timer 600 'loginctl lock-session' \
+                    '' \
+        >/dev/null 2>&1 &
+fi
+
 # clipboard history daemon (clipnotify-based; serves the super+ctrl+v picker).
 if command -v clipmenud >/dev/null 2>&1; then
     clipmenud >/dev/null 2>&1 &

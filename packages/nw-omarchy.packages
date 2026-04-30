@@ -30,6 +30,7 @@ redshift                # nightlight (X11 substitute for hyprsunset)
 ffmpeg                  # screen recording backend (x11grab + pulse + v4l2)
 v4l-utils               # webcam enumeration for screenrecord
 xcolor               (aur)   # color picker (X11 substitute for hyprpicker)
+xidlehook            (aur)   # idle timer daemon — fires screensaver / lock-on-idle
 xss-lock
 maim                 # screenshots
 slop                 # region selector for maim
