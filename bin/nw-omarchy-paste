@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# nw-omarchy-paste — universal CLIPBOARD paste for super+v.
+#
+# Bypasses xdotool key ctrl+v synthesis (which works for some apps but
+# is unreliable: when sxhkd fires the binding mid-press, the synthetic
+# event sometimes leaks super into the focused app, and a subset of apps
+# refuse to bind super+ctrl+v to paste).
+#
+# Two strategies, dispatched by focused-window class:
+#
+#   Terminals:           synth Ctrl+Shift+V
+#                        — universal paste binding in alacritty / kitty /
+#                          ghostty / xterm. Honours bracketed-paste mode
+#                          so multi-line clipboard content doesn't
+#                          execute as commands.
+#
+#   Everything else:     xdotool type --file - (clipboard piped in)
+#                        — sends each char as a synthetic input event,
+#                          bypassing keyboard-binding interpretation.
+#                          Works in browsers / GTK / Qt / Electron /
+#                          rofi input / etc.
+#
+# Trade-off: rich clipboard (HTML, images) becomes plaintext. Same trade
+# omarchy makes via shift+Insert.
+
+set -e
+
+xdotool keyup super_l super_r 2>/dev/null || true
+
+class=$(xdotool getactivewindow getwindowclassname 2>/dev/null || echo "")
+
+case "$class" in
+    Alacritty|kitty|*ghostty*|*xterm*|*urxvt*|*foot*|*Terminal*)
+        xdotool key --clearmodifiers ctrl+shift+v
+        ;;
+    *)
+        content=$(xclip -selection clipboard -o 2>/dev/null) || exit 0
+        [ -n "$content" ] || exit 0
+        xdotool type --clearmodifiers --delay 0 -- "$content"
+        ;;
+esac
