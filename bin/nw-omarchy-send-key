@@ -10,9 +10,13 @@
 # fails to clear the modifier — the synthetic ctrl+v ends up reaching the
 # focused app as super+ctrl+v, which most apps don't bind to paste.
 #
-# Workaround: explicitly issue keyup events for super_l + super_r BEFORE
+# Workaround: explicitly issue keyup events for Super_L + Super_R BEFORE
 # the synthesis. That guarantees the X server's keyboard state has
 # super = up by the time the synthetic ctrl+v lands.
+#
+# NB: keysym names are case-sensitive — `super_l` is silently rejected
+# by xdotool ("No such key name") and the keyup is a no-op. Use the
+# canonical `Super_L` / `Super_R`.
 #
 # Usage: nw-omarchy-send-key <chord>     (same chord syntax as `xdotool key`)
 #
@@ -22,5 +26,5 @@
 #   nw-omarchy-send-key ctrl+x
 
 set -e
-xdotool keyup super_l super_r 2>/dev/null || true
+xdotool keyup Super_L Super_R 2>/dev/null || true
 xdotool key --clearmodifiers "$@"

@@ -25,7 +25,7 @@
 
 set -e
 
-xdotool keyup super_l super_r 2>/dev/null || true
+xdotool keyup Super_L Super_R 2>/dev/null || true
 
 class=$(xdotool getactivewindow getwindowclassname 2>/dev/null || echo "")
 
