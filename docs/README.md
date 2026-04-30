@@ -37,6 +37,7 @@ The uninstaller reads `~/.local/state/nw-omarchy/manifest.tsv` and replays it in
 - [menu.md](menu.md) — `nw-omarchy-menu`: 1-to-1 port of the omarchy system menu (super+alt+space)
 - [gaps.md](gaps.md) — what's at parity vs vanilla omarchy, what's intentionally dropped, what's still worth building
 - [services.md](services.md) — audit of every omarchy systemd unit / hook, with verdict on whether nw-omarchy needs to wire it
+- [clipboard.md](clipboard.md) — universal copy/paste/cut bindings, app matrix, and what each chord actually fires
 
 ## Health-checking the install
 
