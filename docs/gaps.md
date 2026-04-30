@@ -1,6 +1,6 @@
 # Gaps vs vanilla Omarchy
 
-Where nw-omarchy is at parity, what's intentionally dropped, and what's still worth building. Last refreshed alongside commit `5954564`.
+Where nw-omarchy is at parity, what's intentionally dropped, and what's still worth building. Last refreshed after closing the top-five gap items (mic-mute LED, battery notifier, update indicator, idle screensaver, calculator).
 
 ## Footprint
 
@@ -27,6 +27,11 @@ The 178-helper gap is mostly omarchy's hardware/install/system internals which w
 - **Floating Setup TUIs** — wiremix / impala / bluetui / fastfetch open as centered floating overlays
 - **Doctor / status** — `nw-omarchy-doctor` lints the live install in 8 categories
 - **Input prefs** — natural-scroll, keyboard repeat 250/40, parity with omarchy's hypr `input.conf`
+- **Idle handling** — xidlehook fires the tte terminal-art screensaver at 5 min, `loginctl lock-session` (→ xss-lock → nw-omarchy-lock) at 10 min
+- **Battery notifier** — reuses omarchy's `omarchy-battery-monitor.timer`; bspwmrc starts it on session start
+- **Mic-mute LED** — `nw-omarchy-cmd-mic-mute` flips `platform::micmute` on ThinkPads (no-ops on hardware without the LED)
+- **Update-available indicator** — polybar `module/update` polls `omarchy-update-available` every 10 min; click runs `omarchy-update` in a floating terminal
+- **Calculator in launcher** — `super+ctrl+c` opens rofi calc mode; Enter copies the result to clipboard
 
 ## Intentional drops ⛔
 
@@ -45,16 +50,12 @@ Wayland-only or out-of-scope, with no useful X11 cousin in our stack:
 
 ## Gaps worth filling 🔨
 
-Ranked by user-visible impact:
+The top five are now closed (see "At parity" above). What remains:
 
 | # | Gap | Effort | Notes |
 |---:|---|---|---|
-| 1 | **Auto-launch screensaver on idle** | ~30 min | omarchy uses hypridle. xss-lock locks-on-idle but doesn't fire the tte terminal-art screensaver. Add `xidlehook` config or `xss-lock --notifier`. |
-| 2 | **Update-available indicator in polybar** | ~20 min | omarchy waybar's `custom/update` module pulses on available updates. Add a polybar `custom/script` calling `omarchy-update-available`. |
-| 3 | **Battery low-battery notifier** | ~5 min | `omarchy-battery-monitor` ships as a systemd user service. Reuse — autostart from bspwmrc or enable the existing unit. |
-| 4 | **Calculator / web-search in launcher** | ~30 min | Walker has `calc` and `websearch` providers. Rofi via `rofi-calc` (AUR) + a custom websearch mode. |
-| 5 | **Mic-mute LED on ThinkPads** | ~5 min | Bind `XF86AudioMicMute` to `omarchy-cmd-mic-mute-thinkpad` instead of plain `pactl`. |
-| 6 | **Icons in app launcher** | ~5 min | We disabled `show-icons` in rofi. Re-enabling for `nw-omarchy-launcher` shows app icons next to labels (matches walker). Minor cosmetic gain. |
+| 1 | **Web-search provider in launcher** | ~30 min | Walker has a `websearch` provider; rofi has no built-in equivalent. Could ship a custom rofi mode (small bash script) that forwards typed input to a search engine via `xdg-open`. |
+| 2 | **Icons in app launcher** | ~5 min | `show-icons` is currently off. Re-enabling for `nw-omarchy-launcher` shows app icons next to labels (matches walker). Minor cosmetic gain. |
 
 ## Not worth doing ❌
 
@@ -65,12 +66,9 @@ Ranked by user-visible impact:
 
 ## Recommended next moves
 
-If you want to keep building, the order with the highest-impact return:
+The top-5 gap items have landed. Beyond this, the project is in "polish" territory:
 
-1. Auto-launch screensaver on idle
-2. Update-available indicator
-3. Battery low-battery notifier
-4. Mic-mute LED on ThinkPads
-5. Calculator in launcher
+1. Web-search launcher provider (parity quirk; nice-to-have)
+2. Icons in app launcher (5-minute cosmetic)
 
-Together these close the user-perceptible gap to roughly nothing on a daily-driver basis. Beyond them you're into "mostly identical" territory where further work returns diminishing UX gains.
+Beyond those, deeper omarchy parity work hits the X11 ceiling — see "Intentional drops" — so further effort returns diminishing UX gains. Live with it for a few weeks before deciding whether anything else needs revisiting.
