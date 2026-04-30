@@ -5,7 +5,10 @@
 configuration {
     modi:           "drun,run,window";
     show-icons:     false;
-    font:           "JetBrainsMono Nerd Font 22";
+    // *Mono* variant: every nerd-font glyph is forced to single-cell width
+    // so icons + text align in columns the way walker's monospace family
+    // does. The non-Mono variant has variable-width icons → misalignment.
+    font:           "JetBrainsMono Nerd Font Mono 22";
     display-drun:   "";
     display-run:    "";
     display-window: "";

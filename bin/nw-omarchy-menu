@@ -39,7 +39,7 @@ menu() {
         idx=$(echo -e "$options" | grep -nxF "$preselect" | head -1 | cut -d: -f1)
         [ -n "$idx" ] && args+=(-selected-row "$((idx - 1))")
     fi
-    args+=(-theme-str "window { width: 600px; } listview { lines: 12; } * { font: \"JetBrainsMono Nerd Font 18\"; }")
+    args+=(-theme-str "window { width: 600px; } listview { lines: 12; } * { font: \"JetBrainsMono Nerd Font Mono 18\"; }")
     echo -e "$options" | rofi "${args[@]}"
 }
 
@@ -182,28 +182,42 @@ show_style_menu() {
     esac
 }
 
+# Helpers for dynamic-content menus: prepend a fixed icon to every line so
+# every submenu has a consistent leading-icon column for alignment, then
+# strip the icon back off before passing the value to the action.
+prefix_icon() { local icon="$1"; sed "s/^/${icon}  /"; }
+strip_icon()  { sed -E 's/^[^[:space:]]+[[:space:]]+//'; }
+
 show_theme_menu() {
-    local current options choice
+    local current options choice theme
     current=$(cat "$HOME/.config/omarchy/current/theme.name" 2>/dev/null || echo "")
-    options=$(omarchy-theme-list 2>/dev/null)
-    choice=$(menu "Theme" "$options" "" "$current")
-    [ -n "$choice" ] && [ "$choice" != "$current" ] && omarchy-theme-set "$choice"
+    options=$(omarchy-theme-list 2>/dev/null | prefix_icon "󰸌")
+    choice=$(menu "Theme" "$options" "" "󰸌  $current")
+    [ -z "$choice" ] && { back_to show_style_menu; return; }
+    theme=$(printf '%s\n' "$choice" | strip_icon)
+    [ "$theme" != "$current" ] && omarchy-theme-set "$theme"
 }
 
 show_background_menu() {
-    local theme_dir bgs choice
+    local theme_dir bgs choice bg
     theme_dir="$HOME/.config/omarchy/current/theme/backgrounds"
     [ -d "$theme_dir" ] || { notify-send -u low "No backgrounds in current theme"; return; }
-    bgs=$(ls "$theme_dir"/*.{jpg,png,jpeg,webp} 2>/dev/null | xargs -I{} basename {})
+    bgs=$(ls "$theme_dir"/*.{jpg,png,jpeg,webp} 2>/dev/null | xargs -I{} basename {} | prefix_icon "")
     [ -z "$bgs" ] && { notify-send -u low "No backgrounds found"; return; }
     choice=$(menu "Background" "$bgs")
-    [ -n "$choice" ] && nw-omarchy-bg-set "$theme_dir/$choice"
+    [ -z "$choice" ] && { back_to show_style_menu; return; }
+    bg=$(printf '%s\n' "$choice" | strip_icon)
+    nw-omarchy-bg-set "$theme_dir/$bg"
 }
 
 show_font_menu() {
-    local theme; theme=$(menu "Font" "$(omarchy-font-list)" "" "$(omarchy-font-current)")
-    [[ -z $theme ]] && { back_to show_style_menu; return; }
-    omarchy-font-set "$theme"
+    local current options choice font
+    current=$(omarchy-font-current 2>/dev/null || echo "")
+    options=$(omarchy-font-list 2>/dev/null | prefix_icon "")
+    choice=$(menu "Font" "$options" "" "  $current")
+    [ -z "$choice" ] && { back_to show_style_menu; return; }
+    font=$(printf '%s\n' "$choice" | strip_icon)
+    omarchy-font-set "$font"
 }
 
 #─── Setup ─────────────────────────────────────────────────────────────
@@ -226,10 +240,12 @@ show_setup_menu() {
 }
 
 show_setup_power_menu() {
-    local profile cur
+    local cur options choice profile
     cur=$(powerprofilesctl get 2>/dev/null || echo "")
-    profile=$(menu "Power Profile" "$(omarchy-powerprofiles-list 2>/dev/null)" "" "$cur")
-    [[ -z $profile ]] && { back_to show_setup_menu; return; }
+    options=$(omarchy-powerprofiles-list 2>/dev/null | prefix_icon "󱐋")
+    choice=$(menu "Power Profile" "$options" "" "󱐋  $cur")
+    [[ -z $choice ]] && { back_to show_setup_menu; return; }
+    profile=$(printf '%s\n' "$choice" | strip_icon)
     powerprofilesctl set "$profile"
 }
 
@@ -494,7 +510,9 @@ show_update_menu() {
 }
 
 show_update_channel_menu() {
-    case $(menu "Update channel" "🟢 Stable\n🟡 RC\n🟠 Edge\n🔴 Dev") in
+    # Replace omarchy's emoji prefix (which renders inconsistently with
+    # nerd-font glyphs in monospace) with nerd-font color-tagged icons.
+    case $(menu "Update channel" "  Stable\n  RC\n  Edge\n  Dev") in
         *Stable*) present_terminal "omarchy-channel-set stable" ;;
         *RC*)     present_terminal "omarchy-channel-set rc" ;;
         *Edge*)   present_terminal "omarchy-channel-set edge" ;;
