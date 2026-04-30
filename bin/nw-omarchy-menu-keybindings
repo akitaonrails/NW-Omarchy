@@ -102,8 +102,11 @@ for ((i=${#SOURCES[@]}-1; i>=0; i--)); do
     done < <(parse "${SOURCES[$i]}")
 done
 
-# Format for display.
-DISPLAY=""
+# Format for display. NB: the local variable is `output` — `DISPLAY` would
+# shadow the X11 env variable and rofi would inherit the rendered list as
+# its display address, silently failing to connect. (This was the bug
+# that made super+K silently no-op for ages.)
+output=""
 for line in "${LINES[@]}"; do
     IFS=$'\t' read -r chord label sect <<<"$line"
     [ "${#label}" -gt 70 ] && label="${label:0:67}…"
@@ -112,12 +115,12 @@ for line in "${LINES[@]}"; do
     else
         printf -v row '%-30s  →  %s' "$chord" "$label"
     fi
-    DISPLAY+="$row"$'\n'
+    output+="$row"$'\n'
 done
 
-[ -z "$DISPLAY" ] && { notify-send -u low "No bindings found in sxhkdrc"; exit 0; }
+[ -z "$output" ] && { notify-send -u low "No bindings found in sxhkdrc"; exit 0; }
 
-echo -n "$DISPLAY" | rofi -dmenu -i -p "Keybindings…" \
+echo -n "$output" | rofi -dmenu -i -p "Keybindings…" \
     -theme-str 'window { width: 1100px; } listview { lines: 16; } * { font: "JetBrainsMono Nerd Font Mono 16"; }' \
     -no-fixed-num-lines \
     >/dev/null
