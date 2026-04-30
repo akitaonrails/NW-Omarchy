@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # nw-omarchy-menu-keybindings — sxhkd analog of omarchy-menu-keybindings.
 # Parses the active sxhkdrc files and shows them in rofi for search/lookup.
-# Each row: "<chord>   →   <action description>".
+# Each row: "<chord>   →   <description>   [<section>]"
 #
 # Sources, in order (later overrides earlier — same precedence sxhkd uses):
 #   ~/.local/share/nw-omarchy/default/sxhkd/sxhkdrc
 #   ~/.config/sxhkd/sxhkdrc
 #
-# Entries are paired (chord on one line, command on the next, separated by
-# blank lines or comments). The preceding `#` comment block on a chord is
-# treated as the description if present; otherwise the command itself is
-# shown.
+# For each chord we render the immediately-preceding `#` comment line as the
+# description (matches how omarchy-menu-keybindings shows hyprctl's `bindd =`
+# description field). When no comment is present we fall back to the
+# command line itself.
 
 set -euo pipefail
 
@@ -20,61 +20,97 @@ SOURCES=(
     "$HOME/.config/sxhkd/sxhkdrc"
 )
 
-# Parse one sxhkdrc, emit "chord<TAB>command<TAB>section" lines.
+# Parse one sxhkdrc, emit "chord<TAB>desc-or-cmd<TAB>section" lines.
+#
+# State machine:
+#   section header  (#─── name ───) →  flush pending, update section, reset
+#   empty line                       →  flush pending, reset chord/cmd/desc
+#   plain comment (#…)               →  remember as the description for the
+#                                       next chord we see
+#   chord (non-whitespace)           →  flush pending, start new chord (with
+#                                       the remembered desc attached)
+#   indented (whitespace+)           →  accumulate as cmd
 parse() {
     local file="$1"
     [ -f "$file" ] || return 0
     awk '
-        BEGIN { section = ""; chord = ""; cmd = "" }
+        function flush() {
+            if (chord != "" && cmd != "") {
+                label = (desc != "" ? desc : cmd)
+                print chord "\t" label "\t" section
+            }
+            chord = ""; cmd = ""; desc = ""
+        }
+        BEGIN { section = ""; chord = ""; cmd = ""; desc = "" }
+
+        # Section heading: lines like "#─── apps ─────"
         /^#─.*─*$/ {
-            # Section heading: lines like "#─── apps ───────────────"
+            flush()
             s = $0
             sub(/^#─+ */, "", s)
-            sub(/ *─+$/, "", s)
             sub(/ *─+ *$/, "", s)
             section = s
             next
         }
-        /^[[:space:]]*$/ { chord = ""; cmd = ""; next }
-        /^[[:space:]]*#/ { next }
+
+        /^[[:space:]]*$/ {
+            flush()
+            next
+        }
+
+        # Plain comment (non-section). Treat as description for the next
+        # chord. Multi-line comments collapse with " · " separators.
+        /^[[:space:]]*#/ {
+            line = $0
+            sub(/^[[:space:]]*#[[:space:]]*/, "", line)
+            if (line != "") {
+                desc = (desc != "" ? desc " · " line : line)
+            }
+            next
+        }
+
+        # Chord (non-whitespace at column 1, not a comment)
         /^[^[:space:]]/ {
-            if (chord && cmd) print chord "\t" cmd "\t" section
+            flush()
             chord = $0
             cmd = ""
             next
         }
+
+        # Indented = command body
         /^[[:space:]]+/ {
-            sub(/^[[:space:]]+/, "", $0)
-            cmd = (cmd == "" ? $0 : cmd " ; " $0)
+            line = $0
+            sub(/^[[:space:]]+/, "", line)
+            cmd = (cmd == "" ? line : cmd " ; " line)
+            next
         }
-        END { if (chord && cmd) print chord "\t" cmd "\t" section }
+
+        END { flush() }
     ' "$file"
 }
 
-# Collect, de-duplicate by chord (later sources win).
+# De-dup by chord (later sources win — sxhkd's own rule).
 declare -A SEEN
 LINES=()
-# Walk in reverse so later sources override earlier (we keep first sighting)
 for ((i=${#SOURCES[@]}-1; i>=0; i--)); do
-    while IFS=$'\t' read -r chord cmd sect; do
+    while IFS=$'\t' read -r chord label sect; do
         [ -z "$chord" ] && continue
         if [ -z "${SEEN[$chord]:-}" ]; then
             SEEN[$chord]=1
-            LINES+=("$chord"$'\t'"$cmd"$'\t'"$sect")
+            LINES+=("$chord"$'\t'"$label"$'\t'"$sect")
         fi
     done < <(parse "${SOURCES[$i]}")
 done
 
-# Format for display: "<chord>    →    <cmd>    [section]"
+# Format for display.
 DISPLAY=""
 for line in "${LINES[@]}"; do
-    IFS=$'\t' read -r chord cmd sect <<<"$line"
-    # Truncate long commands
-    if [ "${#cmd}" -gt 60 ]; then cmd="${cmd:0:57}…"; fi
+    IFS=$'\t' read -r chord label sect <<<"$line"
+    [ "${#label}" -gt 70 ] && label="${label:0:67}…"
     if [ -n "$sect" ]; then
-        printf -v row '%-30s  →  %s    [%s]' "$chord" "$cmd" "$sect"
+        printf -v row '%-30s  →  %s    [%s]' "$chord" "$label" "$sect"
     else
-        printf -v row '%-30s  →  %s' "$chord" "$cmd"
+        printf -v row '%-30s  →  %s' "$chord" "$label"
     fi
     DISPLAY+="$row"$'\n'
 done
