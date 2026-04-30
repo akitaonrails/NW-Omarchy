@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Polybar custom/script output for the battery module.
+# Replaces internal/battery because polybar 3.7.2's binary has no
+# format-not-charging — it maps "Not charging" (firmware-paused-on-AC,
+# typical ThinkPad) to format-discharging with no plug cue, so the bar
+# looks frozen.
+#
+# Emits icon + percentage with state-appropriate inline polybar color
+# tags (%{F#hex}…%{F-}) pulled from the rendered omarchy theme palette.
+
+set -e
+
+bat=/sys/class/power_supply/BAT0
+ac=/sys/class/power_supply/AC
+[ -d "$bat" ] || exit 0
+
+cap=$(<"$bat/capacity")
+status=$(<"$bat/status")
+ac_online=$(<"$ac/online" 2>/dev/null || echo 0)
+
+colors_file=$HOME/.config/omarchy/current/theme/polybar-colors.ini
+get_color() {
+    awk -F' *= *' "/^$1[[:space:]]*=/ {print \$2; exit}" "$colors_file" 2>/dev/null
+}
+primary=$(get_color primary)
+secondary=$(get_color secondary)
+foreground=$(get_color foreground)
+alert=$(get_color alert)
+
+ramps=(󰁺 󰁻 󰁼 󰁽 󰁾 󰁿 󰂀 󰂁 󰂂 󰁹)
+idx=$(( cap / 10 ))
+[ $idx -gt 9 ] && idx=9
+ramp=${ramps[$idx]}
+
+case "$status" in
+    Charging)       icon="$ramp"; color="$primary"   ;;
+    Full)           icon="󰂅";     color="$secondary" ;;
+    "Not charging") icon="󰚥";     color="$secondary" ;;  # plugged, firmware paused
+    *)              icon="$ramp"
+                    if [ "$cap" -le 20 ]; then color="$alert"
+                    else color="$foreground"
+                    fi
+                    ;;
+esac
+
+# AC plugged but status reports Discharging (some adapters take a tick to
+# update sysfs) — show plug color so the UI reflects that we're on AC.
+if [ "$ac_online" = 1 ] && [ "$status" = "Discharging" ]; then
+    icon="󰚥"
+    color="$secondary"
+fi
+
+printf '%%{F%s}%s  %s%%%%{F-}\n' "$color" "$icon" "$cap"
