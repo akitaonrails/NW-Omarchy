@@ -1,13 +1,12 @@
 # nw-omarchy alacritty overrides — appended to the user's alacritty general.import.
 # See install/alacritty.sh for the wiring.
 #
-# We bind both halves of the universal-clipboard pair:
-#   Ctrl+Insert  → Copy   (paired with super+c via xdotool)
-#   Shift+Insert → Paste  (paired with super+v via xdotool)
-#
 # Defaults in alacritty: Shift+Insert pastes from PRIMARY (X selection),
-# Ctrl+Insert is unbound. Both rebound to use CLIPBOARD here so the
-# universal copy/paste flow round-trips cleanly through a terminal.
+# Ctrl+Insert is unbound, Ctrl+V is forwarded to the running app
+# (bash readline `verbatim`, etc). We rebind all three to use the
+# CLIPBOARD selection so terminal copy/paste matches every other GUI
+# app on the system. Loses bash readline's `quoted-insert` on Ctrl+V —
+# Ctrl+Q is the same in emacs-mode readline on most setups.
 
 [[keyboard.bindings]]
 key = "Insert"
@@ -19,10 +18,6 @@ key = "Insert"
 mods = "Shift"
 action = "Paste"
 
-# Make Ctrl+V paste from CLIPBOARD too. Pairs with super+v → ctrl+v
-# so the universal paste round-trips through alacritty. Loses bash
-# readline's `verbatim next char` (rarely used; ctrl+q is the same in
-# emacs-mode readline on most setups).
 [[keyboard.bindings]]
 key = "V"
 mods = "Control"

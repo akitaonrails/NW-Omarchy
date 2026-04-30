@@ -13,7 +13,7 @@ The 178-helper gap is mostly omarchy's hardware/install/system internals which w
 
 ## At parity ✅
 
-- **Window manager + bindings** — bspwm/sxhkd mirror hyprland's full binding map (apps, webapps, focus, swap, workspaces, resize, screenshots, multimedia, universal clipboard copy/paste/cut)
+- **Window manager + bindings** — bspwm/sxhkd mirror hyprland's full binding map (apps, webapps, focus, swap, workspaces, resize, screenshots, multimedia)
 - **Top bar** — polybar with the omarchy-logo launcher, per-module click actions, and the same nerd-font icons waybar uses (audio/wifi/bluetooth/battery)
 - **Compositor effects** — picom-ftlabs animations (zoom-open / squeeze-close / slide-on-tag-change), blur, rounded corners, fade
 - **System menu** (`super+alt+space`) — 1:1 port of `omarchy-menu` via `rofi -dmenu`, every leaf
@@ -47,6 +47,7 @@ Wayland-only or out-of-scope, with no useful X11 cousin in our stack:
 | Polybar tooltips on hover | polybar 3.x limitation; right-click is our secondary path |
 | Plymouth boot splash, snapper snapshots, limine theme | Boot/filesystem layer — outside the project scope |
 | Hyprsunset / hypridle (Wayland daemons) | Replaced with redshift / xss-lock |
+| `super + c` / `super + v` / `super + x` universal clipboard | Couldn't make X11 key synthesis reliable while super was still physically held — see `docs/clipboard.md`. `ctrl + c` / `ctrl + v` / `ctrl + x` work natively; `super + ctrl + v` opens history. |
 
 ## Gaps worth filling 🔨
 

@@ -84,18 +84,18 @@ App launchers route through `nw-omarchy-launch-*` / `nw-omarchy-cmd-*` helpers i
 
 ### Clipboard
 
-Mirrors `omarchy/default/hypr/bindings/clipboard.conf` plus its `super + ctrl + v` clipboard-manager binding. Hyprland synthesises the key-syms with `sendshortcut`; on X11 we use `xdotool key --clearmodifiers`, which releases the still-held super before injecting the fake press so apps see a clean `ctrl+Insert` / `shift+Insert` / `ctrl+x`.
+Only `super + ctrl + v` (clipboard history) is ported — see `docs/clipboard.md` for the full story on why omarchy's `super + c` / `super + v` / `super + x` universal chords didn't survive the X11 port. Use `ctrl + c` / `ctrl + v` / `ctrl + x` for normal copy/paste/cut.
 
 | Hyprland | sxhkd | substitute |
 |---|---|---|
-| `SUPER + C` → universal copy | `super + c` | `xdotool key --clearmodifiers ctrl+Insert` |
-| `SUPER + V` → universal paste | `super + v` | `xdotool key --clearmodifiers shift+Insert` |
-| `SUPER + X` → universal cut | `super + x` | `xdotool key --clearmodifiers ctrl+x` |
+| `SUPER + C` → universal copy | _not ported_ | use native `ctrl + c` |
+| `SUPER + V` → universal paste | _not ported_ | use native `ctrl + v` |
+| `SUPER + X` → universal cut | _not ported_ | use native `ctrl + x` |
 | `SUPER + CTRL + V` → walker `-m clipboard` | `super + ctrl + v` | `clipmenu` (rofi-backed; `CM_LAUNCHER=rofi` set in bspwmrc) |
 
 History is captured by `clipmenud` (autostarted from bspwmrc) via `clipnotify` + `xsel`.
 
-The `shift+Insert`-pastes-from-PRIMARY trap inside terminals is fixed for alacritty by `install/alacritty.sh`, which appends `default/alacritty/keybindings.toml` to the user's alacritty `general.import`. That overrides `Shift+Insert` to action `Paste` (CLIPBOARD). If you also use kitty / ghostty / wezterm, you'll want to add the equivalent rebind in their config — we don't currently ship overrides for those.
+`default/alacritty/keybindings.toml` (appended to the user's alacritty `general.import` by `install/alacritty.sh`) maps `Ctrl+Insert → Copy`, `Shift+Insert → Paste` (CLIPBOARD, not the default PRIMARY), and `Ctrl+V → Paste` so terminal clipboard-paste matches GUI apps.
 
 ### Multimedia keys
 

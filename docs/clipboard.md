@@ -1,73 +1,44 @@
-# Universal clipboard
+# Clipboard
 
-Three keys mirror omarchy's universal copy/paste/cut. Implementation is asymmetric on purpose — terminal safety wins.
+## What works
 
-```
-super + c   →   xdotool key --clearmodifiers ctrl+Insert
-super + v   →   xdotool key --clearmodifiers ctrl+v
-super + x   →   xdotool key --clearmodifiers ctrl+x
-```
+| Chord | Action | How |
+|---|---|---|
+| `ctrl + c` / `ctrl + v` / `ctrl + x` | Standard copy / paste / cut | Native to every app — no nw-omarchy involvement |
+| `ctrl + insert` / `shift + insert` | Copy / paste in alacritty | Mapped via `default/alacritty/keybindings.toml` to use the **CLIPBOARD** selection (alacritty's default `shift+insert` reads PRIMARY, which is the wrong buffer) |
+| `super + ctrl + v` | Clipboard history picker | `clipmenu` (rofi-backed; `CM_LAUNCHER=rofi` set in bspwmrc autostart) |
 
-`--clearmodifiers` releases super (still physically held by the user) before the synthetic press, so apps see a clean `ctrl+Insert` / `ctrl+v` / `ctrl+x` and not `super+ctrl+…`.
+## What does NOT work — `super + c` / `super + v` / `super + x`
 
-## Why ctrl+Insert for copy but ctrl+v for paste
+omarchy's Hyprland config has universal clipboard chords on the super key (parity with macOS cmd). We **attempted** to port them and shipped several iterations — none reliably worked. **Use `ctrl + v` for paste**.
 
-omarchy uses `ctrl+Insert` / `shift+Insert` / `ctrl+x`. We use `ctrl+Insert` / `ctrl+v` / `ctrl+x`. The difference is `super+v`:
+The bindings are not currently wired in `default/sxhkd/sxhkdrc`. The `nw-omarchy-paste` and `nw-omarchy-send-key` helpers were removed. If you want them locally, add overrides in `~/.config/sxhkd/sxhkdrc`, but expect them to misfire.
 
-| Keysym | Browser behavior on X11 | Terminal | Why we (don't) use it for paste |
-|---|---|---|---|
-| `shift+Insert` | Pastes from **PRIMARY** (X mouse-highlight buffer) | Default: pastes PRIMARY | Different buffer than CLIPBOARD — `super+c` writes CLIPBOARD, so `super+v` reading PRIMARY paste's the wrong thing |
-| `ctrl+v` | Pastes from CLIPBOARD ✓ | Default: forwarded to running app (bash readline `verbatim`, tmux command, etc) | Universal in GUI apps; needs an override in terminals |
+## What we tried (and why none stuck)
 
-For copy, `ctrl+c` is unsafe (it's SIGINT in any terminal) so we keep `ctrl+Insert` which alacritty handles via our override. For paste, `ctrl+v` is universally CLIPBOARD-safe and we add the matching override in alacritty.
+The fundamental problem: when sxhkd fires the binding, the user is still physically holding super. Anything we synthesise after that has to compete with the live modifier state.
 
-## App matrix
+1. `xdotool key --clearmodifiers ctrl+v` — synthetic event reached focused app as `super+ctrl+v` (apps don't bind that → no paste). `--clearmodifiers` is supposed to release/restore the held modifiers but loses to the physical hold on most apps.
+2. `xdotool keyup super_l super_r` then `xdotool key ctrl+v` — silently no-op'd. xdotool keysyms are case-sensitive: `Super_L` works, `super_l` is rejected with "No such key name" but exits 0.
+3. `xdotool keyup Super_L Super_R` then `xdotool key --clearmodifiers ctrl+v` — fixed the case bug; still inconsistent. evdev re-asserts super between our keyup and the next event because the user's finger is still on the key.
+4. Strategy split by focused-window class: terminals get `ctrl+shift+v`, others get `xdotool type` of clipboard content. The `xdotool type` path works when invoked directly from a shell (verified: `DEBUG_xxx` typed at prompt) but doesn't reach the focused app reliably when fired via the sxhkd binding.
+5. `xinput query-state` poll loop, waiting up to 1s for any modifier keycode (37,50,62,64,105,108,133,134) to release before firing. Probe shows the master keyboard reports **no modifiers down** when the binding fires (sxhkd's keyboard grab masks the state from xinput) so the loop short-circuits and we're back to (4)'s race.
 
-What works without any user config beyond what nw-omarchy ships:
+We don't fully understand why `xdotool type` works direct but not via the binding — focus shift, sxhkd grab interaction with XTestFakeKeyEvent, or something deeper in the X event timing. Wayland sidesteps this entirely with `wlr-virtual-keyboard` (separate device, separate state); X11 has only XTest, which shares state with the real keyboard.
 
-| App class | super+c | super+v | super+x | Notes |
-|---|---|---|---|---|
-| Browsers (Firefox / Brave / Chrome / Edge / Opera / Vivaldi) | ✓ | ✓ | ✓ | Standard CLIPBOARD bindings |
-| GTK apps (Nautilus, Gedit, GIMP, …) | ✓ | ✓ | ✓ | |
-| Qt apps (KeePassXC, qBittorrent, …) | ✓ | ✓ | ✓ | |
-| Electron (VSCode, Slack, Discord, Spotify, Signal, Obsidian, 1Password) | ✓ | ✓ | ✓ | Chromium under the hood |
-| LibreOffice / Inkscape / Krita | ✓ | ✓ | ✓ | |
-| Alacritty | ✓ | ✓ | terminal-app | We ship `default/alacritty/keybindings.toml` with Ctrl+Insert→Copy, Shift+Insert→Paste, Ctrl+V→Paste. ctrl+x is forwarded to whatever's running inside (bash readline, vim, etc) |
-| JetBrains / Eclipse | ✓ | ✓ | ✓ | XTestFakeKeyEvent works in modern JVMs |
+If you crack it, PRs welcome.
 
-What needs additional user config (we don't ship these because you don't have them installed):
+## Diagnostic recipes
 
-| App class | What to add |
-|---|---|
-| Kitty       | `~/.config/kitty/kitty.conf`: `map ctrl+v paste_from_clipboard` |
-| Ghostty     | `~/.config/ghostty/config`:  `keybind = ctrl+v=paste_from_clipboard` |
-| xterm / urxvt | Compile-time / Xresources clipboard support is scarce; consider switching |
-| tmux         | tmux eats `ctrl+v` as `verbatim`; `unbind C-v` in `.tmux.conf` |
-| Vim visual mode | `set clipboard=unnamedplus` (vim's own register routing) |
-
-## Clipboard history
-
-Separate from the universal copy/paste pair: `super + ctrl + v` opens a rofi-driven history of the last N CLIPBOARD entries (clipmenu, autostarted from bspwmrc).
-
-## Diagnostic recipe
-
-If `super+c` or `super+v` ever stops firing:
+If `super + ctrl + v` (clipmenu) stops working:
 
 ```bash
-# 1. Is sxhkd alive and grabbing?
+# Is sxhkd alive and grabbing?
 pgrep -af 'sxhkd -c' | head -1
 
-# 2. What does sxhkd think super+c does? (it does silently — no list output)
-grep -B 1 -A 1 '^super + c$' ~/.local/share/nw-omarchy/default/sxhkd/sxhkdrc
+# Is clipmenud collecting? (ships from clipmenu autostart)
+pgrep -af clipmenud
 
-# 3. Add a temporary debug to the binding
-#    super + c
-#        sh -c 'notify-send "fired"; xdotool key --clearmodifiers ctrl+Insert'
-#    Press the key from your real keyboard (xdotool injections don't always
-#    reach passive grabs). If you see the notification → sxhkd works,
-#    issue is xdotool / target app not honouring ctrl+Insert.
-
-# 4. Test xdotool directly
-focused_class=$(xdotool getactivewindow getwindowclassname)
-echo "active window class: $focused_class"
+# Is rofi the launcher? (set in bspwmrc; clipmenu uses CM_LAUNCHER)
+echo "$CM_LAUNCHER"   # should print: rofi
 ```
