@@ -140,6 +140,14 @@ if command -v clipmenud >/dev/null 2>&1; then
     clipmenud >/dev/null 2>&1 &
 fi
 
+# Dunst theme-watcher: signals dunst to restart whenever omarchy-theme-set
+# rewrites ~/.config/omarchy/current/theme.name. Lets notifications repaint
+# on theme change without touching the user's omarchy theme-set hook.
+pkill -f nw-omarchy-dunst-watch >/dev/null 2>&1 || true
+if command -v nw-omarchy-dunst-watch >/dev/null 2>&1; then
+    nw-omarchy-dunst-watch >/dev/null 2>&1 &
+fi
+
 # Low-battery notifier — reuses omarchy's existing systemd user timer
 # (~/.config/systemd/user/omarchy-battery-monitor.timer). Idempotent: start
 # is a no-op if already running. systemctl --user gracefully no-ops if the

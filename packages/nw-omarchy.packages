@@ -23,6 +23,7 @@ xclip                   # screenshot/clipboard plumbing
 wmctrl                  # window-list / focus-by-class for launch-or-focus
 clipmenu                # clipboard history — pulls dmenu, xsel, clipnotify, xdotool
 rofi-calc               # rofi calculator mode — super+ctrl+c
+inotify-tools           # inotifywait for nw-omarchy-dunst-watch (theme→dunst restart)
 xorg-xset               # keyboard repeat rate (xset r rate ...)
 xorg-xinput             # touchpad natural-scroll / tap / clickfinger toggles
 xorg-xrandr             # monitor scaling cycle / internal display toggle (nw-omarchy-menu Hardware)

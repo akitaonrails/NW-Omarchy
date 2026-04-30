@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Restart dunst whenever the omarchy active theme changes.
+#
+# omarchy-theme-set ends by rewriting ~/.config/omarchy/current/theme.name,
+# AFTER omarchy-theme-set-templates has rendered the dunstrc.tpl into
+# ~/.config/omarchy/current/theme/dunstrc. We watch theme.name with
+# inotifywait and signal dunst once the writes settle.
+#
+# Why this approach instead of a theme-set hook: the user's
+# ~/.config/omarchy/hooks/theme-set is reserved for their own GTK / Papirus
+# / libadwaita logic; replacing it would clobber that. omarchy-hook only
+# supports one file per event, so we can't append to it cleanly. A
+# session-scoped watcher sidesteps the conflict entirely.
+
+set -e
+
+WATCH_DIR="$HOME/.config/omarchy/current"
+[ -d "$WATCH_DIR" ] || exit 0
+
+if ! command -v inotifywait >/dev/null 2>&1; then
+    echo "nw-omarchy-dunst-watch: inotifywait not found (install inotify-tools)" >&2
+    exit 0
+fi
+
+while inotifywait -qq -e modify -e create -e close_write "$WATCH_DIR" 2>/dev/null; do
+    # Let omarchy-theme-set-templates finish rendering before we restart.
+    sleep 0.4
+    nw-omarchy-restart-dunst >/dev/null 2>&1 || true
+done

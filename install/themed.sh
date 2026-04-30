@@ -95,4 +95,40 @@ else
     echo "        Templates will render on next theme switch."
 fi
 
+# Wire ~/.config/dunst/dunstrc → the rendered themed dunstrc. dunst doesn't
+# support config @includes, so the symlink is the only way for the user's
+# default config path to resolve to our themed file. nw-omarchy-dunst-watch
+# (autostarted from bspwmrc) picks up theme changes by watching the parent
+# dir and signalling dunst.
+DUNST_DIR="$HOME/.config/dunst"
+DUNST_LINK="$DUNST_DIR/dunstrc"
+DUNST_TARGET="$HOME/.config/omarchy/current/theme/dunstrc"
+
+if [ ! -d "$DUNST_DIR" ]; then
+    run mkdir -p "$DUNST_DIR"
+fi
+run nw-omarchy-track record dir "$DUNST_DIR"
+
+if [ -L "$DUNST_LINK" ] && [ "$(readlink "$DUNST_LINK")" = "$DUNST_TARGET" ]; then
+    echo "  up-to-date: $DUNST_LINK"
+    run nw-omarchy-track record symlink "$DUNST_LINK"
+else
+    backup="-"
+    if [ -e "$DUNST_LINK" ] || [ -L "$DUNST_LINK" ]; then
+        ts="$(date +%Y%m%d-%H%M%S)"
+        sanitized="${DUNST_LINK#/}"; sanitized="${sanitized//\//_}"
+        backup="$NW_OMARCHY_STATE/backups/${sanitized}.${ts}"
+        mkdir -p "$NW_OMARCHY_STATE/backups"
+        run mv "$DUNST_LINK" "$backup"
+    fi
+    run ln -s "$DUNST_TARGET" "$DUNST_LINK"
+    run nw-omarchy-track record symlink "$DUNST_LINK" "$backup"
+fi
+
+# Restart dunst so it picks up the new config now (rather than waiting for
+# the next session or theme change).
+if [ "$DRY_RUN" = "0" ] && command -v dunst >/dev/null 2>&1 && pgrep -x dunst >/dev/null; then
+    nw-omarchy-restart-dunst >/dev/null 2>&1 || true
+fi
+
 echo "themed: done."
