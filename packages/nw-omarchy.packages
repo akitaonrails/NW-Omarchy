@@ -22,6 +22,7 @@ xdotool                 # active-window pid → terminal cwd; key-sym injection 
 xclip                   # screenshot/clipboard plumbing
 wmctrl                  # window-list / focus-by-class for launch-or-focus
 clipmenu                # clipboard history — pulls dmenu, xsel, clipnotify, xdotool
+rofi-calc               # rofi calculator mode — super+ctrl+c
 xorg-xset               # keyboard repeat rate (xset r rate ...)
 xorg-xinput             # touchpad natural-scroll / tap / clickfinger toggles
 xorg-xrandr             # monitor scaling cycle / internal display toggle (nw-omarchy-menu Hardware)

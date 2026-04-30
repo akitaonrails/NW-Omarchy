@@ -136,6 +136,10 @@ super + Escape
 super + ctrl + e
     rofi -show emoji
 
+# Calculator (rofi-calc): result auto-copies to clipboard on Enter.
+super + ctrl + c
+    rofi -show calc -modi calc -no-show-match -no-sort -calc-command 'echo -n "{result}" | xclip -selection clipboard'
+
 super + k
     nw-omarchy-menu-keybindings
 
