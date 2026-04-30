@@ -1,9 +1,19 @@
 # nw-omarchy alacritty overrides — appended to the user's alacritty general.import.
 # See install/alacritty.sh for the wiring.
+#
+# We bind both halves of the universal-clipboard pair:
+#   Ctrl+Insert  → Copy   (paired with super+c via xdotool)
+#   Shift+Insert → Paste  (paired with super+v via xdotool)
+#
+# Defaults in alacritty: Shift+Insert pastes from PRIMARY (X selection),
+# Ctrl+Insert is unbound. Both rebound to use CLIPBOARD here so the
+# universal copy/paste flow round-trips cleanly through a terminal.
 
-# Make Shift+Insert paste from CLIPBOARD (default in alacritty: PRIMARY).
-# This matches the universal-paste binding (super + v → shift+Insert) so what
-# you `super+c`'d from a browser actually pastes inside the terminal.
+[[keyboard.bindings]]
+key = "Insert"
+mods = "Control"
+action = "Copy"
+
 [[keyboard.bindings]]
 key = "Insert"
 mods = "Shift"
