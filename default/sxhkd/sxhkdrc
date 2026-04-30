@@ -146,16 +146,26 @@ super + k
 #─── universal copy / paste / cut (parity with omarchy clipboard.conf) ─
 # Hyprland uses `sendshortcut`. On X11 we synthesise the key-syms with
 # xdotool. --clearmodifiers releases super (still held by the user) before
-# the synthetic press, so apps see a clean ctrl+Insert / shift+Insert / ctrl+x
-# instead of super+ctrl+Insert.
-# Caveat: in terminals shift+Insert pastes from PRIMARY (X selection),
-# not CLIPBOARD. Configure your terminal to bind shift+Insert → CLIPBOARD
-# if you want full parity inside terminals.
+# the synthetic press, so apps see a clean ctrl+Insert / ctrl+v / ctrl+x
+# instead of super+ctrl+…
+#
+# Asymmetric on purpose:
+#   super+c → ctrl+Insert  — terminal-safe (ctrl+c is SIGINT). Browsers /
+#                            GTK apps interpret ctrl+Insert as CLIPBOARD copy.
+#   super+v → ctrl+v        — universal CLIPBOARD paste in all GUI apps.
+#                            shift+Insert (omarchy's choice) reads from
+#                            PRIMARY in many browsers, which is the X
+#                            mouse-highlight buffer — different from the
+#                            CLIPBOARD super+c writes to. Our alacritty
+#                            override binds ctrl+v → Paste so terminals
+#                            participate.
+#   super+x → ctrl+x        — universal cut. In bash readline this is
+#                            kill-line; same trade omarchy makes.
 super + c
     xdotool key --clearmodifiers ctrl+Insert
 
 super + v
-    xdotool key --clearmodifiers shift+Insert
+    xdotool key --clearmodifiers ctrl+v
 
 super + x
     xdotool key --clearmodifiers ctrl+x

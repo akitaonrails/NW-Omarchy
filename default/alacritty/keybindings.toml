@@ -18,3 +18,12 @@ action = "Copy"
 key = "Insert"
 mods = "Shift"
 action = "Paste"
+
+# Make Ctrl+V paste from CLIPBOARD too. Pairs with super+v → ctrl+v
+# so the universal paste round-trips through alacritty. Loses bash
+# readline's `verbatim next char` (rarely used; ctrl+q is the same in
+# emacs-mode readline on most setups).
+[[keyboard.bindings]]
+key = "V"
+mods = "Control"
+action = "Paste"
