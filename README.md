@@ -41,6 +41,7 @@ nw-omarchy-doctor        # lint live install (packages, themes, daemons, ...)
 
 - [docs/README.md](docs/README.md) — what works, what doesn't, gotchas
 - [docs/architecture.md](docs/architecture.md) — directory layout and conventions
+- [docs/gaps.md](docs/gaps.md) — parity with vanilla omarchy: what's done, what's intentionally dropped, what's still worth building
 - [docs/porting-hypr.md](docs/porting-hypr.md) — Hyprland binding/feature → X11 map
 
 ## Repo layout
