@@ -39,7 +39,7 @@ menu() {
         idx=$(echo -e "$options" | grep -nxF "$preselect" | head -1 | cut -d: -f1)
         [ -n "$idx" ] && args+=(-selected-row "$((idx - 1))")
     fi
-    args+=(-theme-str "window { width: 480px; } listview { lines: 12; } * { font: \"JetBrainsMono Nerd Font 12\"; }")
+    args+=(-theme-str "window { width: 600px; } listview { lines: 12; } * { font: \"JetBrainsMono Nerd Font 18\"; }")
     echo -e "$options" | rofi "${args[@]}"
 }
 
