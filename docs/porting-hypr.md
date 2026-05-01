@@ -63,24 +63,50 @@ App launchers route through `nw-omarchy-launch-*` / `nw-omarchy-cmd-*` helpers i
 
 | Hyprland | X11 |
 |---|---|
-| `SUPER + SPACE` → walker | `super + space` → `rofi -show drun` |
+| `SUPER + SPACE` → walker | `super + space` → pinned-apps cheat-sheet (`nw-omarchy-launcher`) |
+| `SUPER + SHIFT + SPACE` → walker (full) | `super + shift + space` → `rofi -show drun` |
 | `SUPER + CTRL + E` → emoji | `super + ctrl + e` → `rofi -show emoji` |
-| `SUPER + K` → key bindings | `super + k` → `rofi -show keys` (TBD: pretty list) |
-| `SUPER + ESCAPE` → system menu | **TODO** — `omarchy-menu system` may work; test after install |
-| `SUPER + ALT + SPACE` → omarchy-menu | **TODO** — same |
+| `SUPER + CTRL + C` → capture menu | _not ported_ — chord taken by rofi-calc; use `super+alt+space` → Capture |
+| `SUPER + CTRL + S` → share menu | `super + ctrl + s` → `nw-omarchy-menu Share` |
+| `SUPER + CTRL + H` → hardware menu | `super + ctrl + h` → `nw-omarchy-menu Hardware` |
+| `SUPER + K` → key bindings | `super + k` → `nw-omarchy-menu-keybindings` (rofi list parsed from sxhkdrc) |
+| `SUPER + ESCAPE` → system menu | `super + Escape` → `nw-omarchy-menu System` |
+| `SUPER + ALT + SPACE` → omarchy-menu | `super + alt + space` → `nw-omarchy-menu` |
 
 ### Aesthetics / system toggles
 
 | Hyprland | X11 |
 |---|---|
-| `SUPER + L` → lock | `super + l` → `nw-omarchy-lock` (i3lock-color) |
-| `SUPER + CTRL + L` → workspace layout toggle | `super + ctrl + l` → `bspc desktop -l next` |
+| `SUPER + L` → toggle workspace layout | `super + l` → `nw-omarchy-toggle-layout` |
+| `SUPER + CTRL + L` → lock system | `super + ctrl + l` → `nw-omarchy-lock` (i3lock-color) |
 | `SUPER + BACKSPACE` → toggle window transparency | not ported (picom rule-based, not toggle-based) |
-| `SUPER + SHIFT + BACKSPACE` → toggle gaps | `super + BackSpace` → toggles current desktop's gap |
-| `SUPER + SHIFT + SPACE` → toggle waybar | **TODO** — polybar equivalent: `polybar-msg cmd toggle` |
+| `SUPER + SHIFT + BACKSPACE` → toggle gaps | `super + BackSpace` → `nw-omarchy-toggle-gaps` |
+| `SUPER + CTRL + N` → toggle nightlight | `super + ctrl + n` → `nw-omarchy-toggle-nightlight` |
+| `SUPER + CTRL + I` → toggle locking on idle | `super + ctrl + i` → `nw-omarchy-toggle-idle` |
+| `SUPER + CTRL + Delete` → toggle laptop display | `super + ctrl + Delete` → `nw-omarchy-monitor-internal toggle` |
+| `SUPER + CTRL + ALT + T` → notify time | `super + ctrl + alt + t` → notify-send wrapper |
+| `SUPER + CTRL + ALT + B` → notify battery | `super + ctrl + alt + b` → notify-send wrapper |
 | Print → screenshot | `Print` → `nw-omarchy-cmd-screenshot region` (maim+slop+xclip+notify-send) |
 | `SHIFT + Print` → fullscreen | `shift + Print` → `nw-omarchy-cmd-screenshot fullscreen` |
-| `SUPER + ,` → dismiss notification | **TODO** — `dunstctl close` |
+| `ALT + Print` → screen record menu | `alt + Print` → `nw-omarchy-menu Capture` |
+| `SUPER + Print` → color picker | `super + Print` → `xcolor` → clipboard |
+
+### Notifications (omarchy `super + ,` family, mako → dunstctl)
+
+| Hyprland | X11 |
+|---|---|
+| `SUPER + ,` → dismiss last | `super + comma` → `dunstctl close` |
+| `SUPER + SHIFT + ,` → dismiss all | `super + shift + comma` → `dunstctl close-all` |
+| `SUPER + CTRL + ,` → toggle silencing | `super + ctrl + comma` → `dunstctl set-paused toggle` |
+
+### Per-app TUIs / controls (omarchy `super + ctrl + letter`)
+
+| Hyprland | X11 |
+|---|---|
+| `SUPER + CTRL + A` → audio | `super + ctrl + a` → `nw-omarchy-launch-audio` |
+| `SUPER + CTRL + B` → bluetooth | `super + ctrl + b` → `nw-omarchy-launch-bluetooth` |
+| `SUPER + CTRL + W` → wifi | `super + ctrl + w` → `nw-omarchy-launch-wifi` |
+| `SUPER + CTRL + T` → btop | `super + ctrl + t` → `nw-omarchy-launch-tui btop` |
 
 ### Clipboard
 
@@ -170,3 +196,8 @@ wrappers — we just call them through:
 - **Live-preview workspace swipe**: bspwm has no in-progress switch state, and libinput-gestures only fires on gesture completion. We do animate the post-completion transition on picom v13 (custom `offset-x` script using `window-monitor-width`), but it's a one-shot pan — no continuous-during-the-gesture preview like Hyprland's `workspace_swipe`.
 - **Direction-aware workspace slide**: picom v13 sees `show` / `hide` per window with no WM-action context, so the slide direction is fixed (out-left / in-right) regardless of next vs prev. Hyprland gets direction-aware swipes because Hyprland is both the WM and the compositor.
 - **`omarchy-hyprland-active-window-transparency-toggle`** etc.: hyprctl-based, would need a per-window picom opacity rule manager.
+- **Scratchpad** (`super + s`): hyprland's `togglespecialworkspace` has no clean bspwm analog — a hidden-marked-node hack would need a daemon to track state. Skipped.
+- **Window grouping** (`super + g`, `super + alt + arrow`, etc.): hypr v2 tabbed/stacked groups. bspwm doesn't have grouped layout in this shape.
+- **Pop-out window** (`super + o`): `togglefloating` + pin. Niche enough to skip; add if you actually use it.
+- **Cursor zoom** (`super + ctrl + z`): X11 has no per-cursor zoom factor; would require xrandr `--scale` global toggle which is heavy-handed.
+- **Universal copy/paste/cut** (`super + c/v/x`): see `docs/clipboard.md` — couldn't reliably synthesise the chord while super was still physically held.

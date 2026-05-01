@@ -153,21 +153,29 @@ super + ctrl + v
     clipmenu
 
 #─── window control ───────────────────────────────────────────────────
+# Close window
 super + w
     bspc node -c
 
+# Toggle window split (omarchy v1: dwindle togglesplit)
 super + j
     bspc node -t \~tiled
 
+# Pseudo window
 super + p
     bspc node -t \~pseudo_tiled
 
+# Toggle window floating/tiling
 super + shift + v
     bspc node -t \~floating
 
-shift + F11
+# Fullscreen (omarchy v2: super+f)
+super + f
     bspc node -t \~fullscreen
 
+# Fullscreen (legacy keys, kept for muscle memory)
+shift + F11
+    bspc node -t \~fullscreen
 alt + F11
     bspc node -t \~fullscreen
 
@@ -222,25 +230,94 @@ super + shift + minus
 super + shift + equal
     bspc node -z bottom 0 100
 
-#─── screenshots ──────────────────────────────────────────────────────
+#─── screenshots / capture ───────────────────────────────────────────
+# Screenshot (region)
 Print
     nw-omarchy-cmd-screenshot region
 
+# Screenshot (fullscreen)
 shift + Print
     nw-omarchy-cmd-screenshot fullscreen
 
+# Screenrecording (omarchy: alt+Print → record menu)
 alt + Print
-    nw-omarchy-cmd-screenshot region
+    nw-omarchy-menu Capture
+
+# Color picker (omarchy: super+Print → hyprpicker. We use xcolor.)
+super + Print
+    sh -c 'col=$(xcolor 2>/dev/null) && [ -n "$col" ] && printf "%s" "$col" | xclip -selection clipboard && notify-send -u low "Color copied" "$col"'
 
 #─── system / aesthetics ──────────────────────────────────────────────
+# Toggle workspace layout (omarchy v2 super+l)
 super + l
+    nw-omarchy-toggle-layout
+
+# Lock system (omarchy v2 super+ctrl+l)
+super + ctrl + l
     nw-omarchy-lock
 
-super + ctrl + l
-    bspc desktop -l next
-
+# Toggle window gaps
 super + BackSpace
-    sh -c 'g=$(bspc config -d focused window_gap); bspc config -d focused window_gap $([ "$g" -gt 0 ] && echo 0 || echo 4)'
+    nw-omarchy-toggle-gaps
+
+#─── notifications (dunst — parity with omarchy mako/super+comma) ────
+# Dismiss last notification
+super + comma
+    dunstctl close
+
+# Dismiss all notifications
+super + shift + comma
+    dunstctl close-all
+
+# Toggle silencing notifications
+super + ctrl + comma
+    dunstctl set-paused toggle
+
+#─── controls (per-app TUIs and toggles, omarchy super+ctrl+letter) ──
+# Audio controls
+super + ctrl + a
+    nw-omarchy-launch-audio
+
+# Bluetooth controls
+super + ctrl + b
+    nw-omarchy-launch-bluetooth
+
+# Wifi controls
+super + ctrl + w
+    nw-omarchy-launch-wifi
+
+# Activity (btop)
+super + ctrl + t
+    nw-omarchy-launch-tui btop
+
+# Hardware menu
+super + ctrl + h
+    nw-omarchy-menu Hardware
+
+# Share menu (omarchy super+ctrl+s)
+super + ctrl + s
+    nw-omarchy-menu Share
+
+# Toggle nightlight (redshift)
+super + ctrl + n
+    nw-omarchy-toggle-nightlight
+
+# Toggle locking on idle
+super + ctrl + i
+    nw-omarchy-toggle-idle
+
+# Toggle laptop display
+super + ctrl + Delete
+    nw-omarchy-monitor-internal toggle
+
+#─── status notifications (omarchy super+ctrl+alt+letter) ────────────
+# Show time
+super + ctrl + alt + t
+    sh -c 'notify-send -u low "    $(date +"%A %H:%M  ·  %d %B %Y  ·  Week %V")"'
+
+# Show battery remaining
+super + ctrl + alt + b
+    sh -c 'notify-send -u low "$(omarchy-battery-status 2>/dev/null || cat /sys/class/power_supply/BAT0/capacity 2>/dev/null && echo "%")"'
 
 #─── multimedia keys ──────────────────────────────────────────────────
 XF86AudioRaiseVolume
