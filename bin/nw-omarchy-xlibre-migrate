@@ -1,204 +1,30 @@
 #!/usr/bin/env bash
-# nw-omarchy-xlibre-migrate — opt-in migration from xorg-server → XLibre.
+# Pre-1.0 stub. The XLibre swap is now part of install.sh's regular
+# pipeline — re-running install.sh --apply gives you the full target
+# state (bspwm session + picom v13 + XLibre) from any starting point.
+# No separate migration step exists yet.
 #
-# Idempotent: every step checks before acting. Re-running on a system that's
-# already on XLibre is a no-op. The pipeline:
-#   1. Trust the XLibre signing key (skip if already trusted)
-#   2. Add the [xlibre] repo to pacman.conf (skip if present)
-#   3. Compute swap set from currently-installed xorg/xf86 packages
-#   4. pacman -S the xlibre equivalents in one transaction (provides/replaces
-#      handle the xorg-server removal natively — no manual -R needed)
+# Once the project starts cutting 1.0+ tags we'll add real upgrade
+# migrations (e.g. picom-ftlabs-git → picom for users coming from
+# pre-1.0 installs) and this script will get a body.
 #
-# Default is DRY RUN. Pass --apply to commit. Pass --revert --apply to roll back.
-# See docs/xlibre.md for the full story.
+# To revert FROM xlibre back to xorg-server today, do it manually:
+#   sudo pacman -S xorg-server xorg-server-common xf86-input-libinput
+# Pacman's provides/conflicts logic will swap the xlibre packages out.
 
-set -euo pipefail
+cat <<'EOF'
+nw-omarchy-xlibre-migrate: no-op until 1.0.
 
-XLIBRE_KEY=73580DE2EDDFA6D6
-XLIBRE_REPO_URL='https://x11libre.net/repo/arch_based/x86_64'
-PACMAN_CONF=/etc/pacman.conf
+The XLibre swap is part of the install pipeline. Run:
 
-apply=0
-revert=0
-auto_yes=0
+    ./install.sh --apply
 
-usage() {
-    cat <<EOF
-Usage: nw-omarchy-xlibre-migrate [--apply | --dry-run] [--revert] [--yes]
+from $NW_OMARCHY_PATH (default ~/.local/share/nw-omarchy) to reach
+the latest target state — including XLibre — from any starting point.
 
-Default is dry-run. Pass --apply to actually swap packages.
+Manual revert recipe (if you need to drop back to xorg-server):
 
-  --apply      commit (otherwise: print only)
-  --dry-run    explicit dry-run (the default)
-  --revert     roll back to xorg-server (use with --apply)
-  --yes        skip the final y/N prompt (for unattended runs)
+    sudo pacman -S xorg-server xorg-server-common xf86-input-libinput
 
-Examples:
-  nw-omarchy-xlibre-migrate                  # preview
-  nw-omarchy-xlibre-migrate --apply          # do it
-  nw-omarchy-xlibre-migrate --revert --apply # roll back
-
-Reboot is recommended after either direction.
+See docs/xlibre.md for the full story.
 EOF
-}
-
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --apply)   apply=1 ;;
-        --dry-run) apply=0 ;;
-        --revert)  revert=1 ;;
-        --yes|-y)  auto_yes=1 ;;
-        -h|--help) usage; exit 0 ;;
-        *) echo "unknown flag: $1" >&2; usage >&2; exit 2 ;;
-    esac
-    shift
-done
-
-say() { printf '%s\n' "$*"; }
-run() {
-    if [ "$apply" = 1 ]; then
-        eval "$@"
-    else
-        say "[dry-run] $*"
-    fi
-}
-
-# ── preflight ────────────────────────────────────────────────────────
-command -v pacman >/dev/null || { say "ERROR: pacman not found (Arch only)"; exit 1; }
-
-if [ "$apply" = 1 ] && ! sudo -v; then
-    say "ERROR: sudo authentication failed"; exit 1
-fi
-
-gpu=$(lspci 2>/dev/null | grep -iE 'vga|3d|display' | head -1 || true)
-[ -n "$gpu" ] && say "GPU detected: $gpu"
-
-if echo "$gpu" | grep -qi nvidia; then
-    if pacman -Qq nvidia >/dev/null 2>&1 || pacman -Qq nvidia-dkms >/dev/null 2>&1; then
-        say
-        say "NOTE: proprietary Nvidia driver detected."
-        say "      XLibre >=25.0.0.16 auto-handles the ABI mismatch internally."
-        say "      Older releases need Option \"IgnoreABI\" \"1\" in xorg.conf."
-        say "      Run 'pacman -Si xlibre-xserver' to verify version after the swap."
-    fi
-fi
-
-# ── already-migrated short-circuit ───────────────────────────────────
-# NB: `pacman -Q xorg-server` returns success even when xlibre-xserver
-# is the actual installed package, because xlibre-xserver declares
-# provides=('xorg-server' ...) and pacman matches that. Match the local
-# package list literally to avoid the false positive.
-pkg_installed() { pacman -Q 2>/dev/null | awk -v p="$1" '$1==p {f=1} END{exit !f}'; }
-have_xlibre=0; have_xorg=0
-pkg_installed xlibre-xserver && have_xlibre=1
-pkg_installed xorg-server    && have_xorg=1
-
-if [ "$revert" = 0 ] && [ "$have_xlibre" = 1 ] && [ "$have_xorg" = 0 ]; then
-    say "Already on XLibre — nothing to do."
-    exit 0
-fi
-if [ "$revert" = 1 ] && [ "$have_xlibre" = 0 ] && [ "$have_xorg" = 1 ]; then
-    say "Already on xorg-server — nothing to revert."
-    exit 0
-fi
-
-# ── repo + key trust (only on forward migration) ─────────────────────
-if [ "$revert" = 0 ]; then
-    if sudo pacman-key --list-keys "$XLIBRE_KEY" >/dev/null 2>&1; then
-        say "✓ XLibre signing key already trusted"
-    else
-        say "→ trusting XLibre signing key $XLIBRE_KEY"
-        run "sudo pacman-key --recv-keys $XLIBRE_KEY"
-        run "sudo pacman-key --lsign-key $XLIBRE_KEY"
-    fi
-
-    if grep -q '^\[xlibre\]' "$PACMAN_CONF"; then
-        say "✓ [xlibre] repo already in $PACMAN_CONF"
-    else
-        say "→ adding [xlibre] repo to $PACMAN_CONF"
-        if [ "$apply" = 1 ]; then
-            printf '\n[xlibre]\nServer = %s\n' "$XLIBRE_REPO_URL" | sudo tee -a "$PACMAN_CONF" >/dev/null
-        else
-            say "[dry-run] append [xlibre] / Server=$XLIBRE_REPO_URL to $PACMAN_CONF"
-        fi
-    fi
-
-    run "sudo pacman -Sy"
-fi
-
-# ── compute swap set ─────────────────────────────────────────────────
-declare -a to_install=()
-
-if [ "$revert" = 0 ]; then
-    [ "$have_xorg" = 1 ] && to_install+=(xlibre-xserver xlibre-xserver-common)
-    while read -r p; do
-        case "$p" in
-            xf86-input-*)        to_install+=("xlibre-input-${p#xf86-input-}") ;;
-            xf86-video-*)        to_install+=("xlibre-video-${p#xf86-video-}") ;;
-            xorg-server-xephyr)  to_install+=(xlibre-xserver-xephyr) ;;
-            xorg-server-xnest)   to_install+=(xlibre-xserver-xnest) ;;
-            xorg-server-xvfb)    to_install+=(xlibre-xserver-xvfb) ;;
-            xorg-server-devel)   to_install+=(xlibre-xserver-devel) ;;
-        esac
-    done < <(pacman -Qq 2>/dev/null)
-else
-    [ "$have_xlibre" = 1 ] && to_install+=(xorg-server xorg-server-common)
-    while read -r p; do
-        case "$p" in
-            xlibre-input-*)        to_install+=("xf86-input-${p#xlibre-input-}") ;;
-            xlibre-video-*)        to_install+=("xf86-video-${p#xlibre-video-}") ;;
-            xlibre-xserver-xephyr) to_install+=(xorg-server-xephyr) ;;
-            xlibre-xserver-xnest)  to_install+=(xorg-server-xnest) ;;
-            xlibre-xserver-xvfb)   to_install+=(xorg-server-xvfb) ;;
-            xlibre-xserver-devel)  to_install+=(xorg-server-devel) ;;
-        esac
-    done < <(pacman -Qq 2>/dev/null)
-fi
-
-if [ "${#to_install[@]}" = 0 ]; then
-    say "Nothing to swap. (No matching xorg/xlibre packages installed.)"
-    exit 0
-fi
-
-# Dedup
-mapfile -t to_install < <(printf '%s\n' "${to_install[@]}" | awk '!seen[$0]++')
-
-say
-if [ "$revert" = 0 ]; then
-    say "→ Will swap to XLibre. Pacman handles xorg-server removal via provides/conflicts."
-else
-    say "→ Will revert to xorg-server."
-fi
-say "  Packages: ${to_install[*]}"
-say
-
-if [ "$apply" = 0 ]; then
-    say "DRY RUN — re-run with --apply to commit."
-    exit 0
-fi
-
-if [ "$auto_yes" = 0 ]; then
-    read -rp "Proceed? [y/N] " ans
-    [[ "$ans" =~ ^[Yy] ]] || { say "Aborted."; exit 1; }
-fi
-
-# ── swap ─────────────────────────────────────────────────────────────
-sudo pacman -S --needed "${to_install[@]}"
-
-# ── verify ───────────────────────────────────────────────────────────
-say
-if [ "$revert" = 0 ]; then
-    if pkg_installed xlibre-xserver && ! pkg_installed xorg-server; then
-        say "✓ Now on XLibre — reboot recommended."
-        say "  Revert later with: nw-omarchy-xlibre-migrate --revert --apply"
-    else
-        say "✗ Verification failed: xorg-server still present after swap"; exit 1
-    fi
-else
-    if pkg_installed xorg-server && ! pkg_installed xlibre-xserver; then
-        say "✓ Reverted to xorg-server — reboot recommended."
-        say "  The [xlibre] repo and signing key remain in place; remove manually if desired."
-    else
-        say "✗ Verification failed: xlibre-xserver still present after revert"; exit 1
-    fi
-fi

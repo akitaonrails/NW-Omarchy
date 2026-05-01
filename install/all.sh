@@ -16,13 +16,16 @@ step() {
 
 step preflight
 step packages
-step xlibre
 step session
 step sddm-picker
 step config
 step themed
 step gestures
 step alacritty
+# xlibre last: it's the only step that does a system-wide pacman-managed
+# swap (xorg-server → xlibre-xserver). Run it after everything else is
+# laid down so a failure here doesn't leave the bspwm session half-set-up.
+step xlibre
 
 echo
 echo "==> nw-omarchy: install pipeline complete"

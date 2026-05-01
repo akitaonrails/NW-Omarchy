@@ -4,7 +4,7 @@ A secondary login option for Omarchy: **bspwm + picom (upstream v13) on XLibre**
 
 > "Not Wayland Omarchy." Sits parallel to Hyprland — your Omarchy session is untouched.
 
-XLibre is the project's X server target (a maintained `xorg-server` fork). It coexists cleanly with omarchy's hyprland — the install pipeline does not swap your X server automatically because the operation is risky enough to warrant a deliberate confirmation step; run `nw-omarchy-xlibre-migrate --apply` after `install.sh --apply` to swap. Stock `xorg-server` still works as a fallback if you'd rather skip the migration. See [docs/xlibre.md](docs/xlibre.md) for the full story.
+XLibre is the project's X server target (a maintained `xorg-server` fork). It coexists cleanly with omarchy's hyprland (xorg-xwayland is untouched). `install.sh --apply` runs the swap as the last step of the pipeline. See [docs/xlibre.md](docs/xlibre.md) for what it touches and how to revert.
 
 ## What this is not
 
@@ -16,15 +16,13 @@ XLibre is the project's X server target (a maintained `xorg-server` fork). It co
 
 ```bash
 cd ~/.local/share/nw-omarchy
-./install.sh                          # dry-run by default; prints what it would do
-./install.sh --apply                  # install bspwm/picom/polybar/sxhkd/rofi configs
-
-# recommended: swap xorg-server for XLibre (idempotent; reboot after)
-nw-omarchy-xlibre-migrate             # preview
-nw-omarchy-xlibre-migrate --apply     # commit
+./install.sh           # dry-run by default; prints what it would do
+./install.sh --apply   # bspwm session + picom v13 + XLibre swap, in one shot
 ```
 
-Pick `nw-bspwm` from the SDDM session selector on next login.
+Reboot, then pick `nw-bspwm` from the SDDM session selector on next login.
+
+> Pre-1.0: `install.sh --apply` is the canonical path to the latest target state from any starting point. Idempotent — safe to re-run after pulling repo updates. Post-1.0 we'll add proper upgrade migrations.
 
 ## Uninstall
 
