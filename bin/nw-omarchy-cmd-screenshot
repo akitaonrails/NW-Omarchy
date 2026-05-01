@@ -35,8 +35,20 @@ case "$MODE" in
     fullscreen)
         maim "$FILEPATH"
         ;;
+    delayed-fullscreen)
+        # 3-second countdown before firing. Use case: capturing a menu
+        # / rofi / dropdown that has the keyboard grab — you press this
+        # chord first, get 3 seconds to open the thing you want to
+        # screenshot, then maim fires regardless of who has the
+        # keyboard. notify-send shows the countdown so you don't have
+        # to guess the timing.
+        notify-send -u low "Screenshot in 3s…" \
+            "Open the menu / rofi you want to capture now." -t 2800
+        sleep 3
+        maim "$FILEPATH"
+        ;;
     *)
-        echo "unknown mode: $MODE (region|fullscreen|smart)" >&2
+        echo "unknown mode: $MODE (region|fullscreen|delayed-fullscreen|smart)" >&2
         exit 1
         ;;
 esac

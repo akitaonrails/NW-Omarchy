@@ -88,6 +88,7 @@ App launchers route through `nw-omarchy-launch-*` / `nw-omarchy-cmd-*` helpers i
 | `SUPER + CTRL + ALT + B` → notify battery | `super + ctrl + alt + b` → notify-send wrapper |
 | Print → screenshot | `Print` → `nw-omarchy-cmd-screenshot fullscreen` (immediate, no crosshair — most common case) |
 | `SHIFT + Print` → fullscreen | `shift + Print` → `nw-omarchy-cmd-screenshot region` (slop crosshair selection) |
+| _no equivalent_ | `super + shift + Print` → 3-second delayed fullscreen — capture rofi / menus that have the keyboard grab |
 | `ALT + Print` → screen record menu | `alt + Print` → `nw-omarchy-menu Capture` |
 | `SUPER + Print` → color picker | `super + Print` → `xcolor` → clipboard |
 
@@ -158,7 +159,7 @@ underneath.
 | `omarchy-launch-tui` | `nw-omarchy-launch-tui` | `alacritty --class org.nw-omarchy.<cmd> -e <cmd>` |
 | `omarchy-launch-editor` | `nw-omarchy-launch-editor` | `$EDITOR`-aware; TUI editors wrapped in `nw-omarchy-launch-tui` |
 | `omarchy-cmd-terminal-cwd` | `nw-omarchy-cmd-terminal-cwd` | `xdotool getactivewindow getwindowpid` → child shell `/proc/<pid>/cwd` |
-| `omarchy-cmd-screenshot` | `nw-omarchy-cmd-screenshot` | `maim+slop+xclip+notify-send`; modes `region|fullscreen|smart` |
+| `omarchy-cmd-screenshot` | `nw-omarchy-cmd-screenshot` | `maim+slop+xclip+notify-send`; modes `region|fullscreen|delayed-fullscreen|smart` |
 | `omarchy-lock-screen` | `nw-omarchy-lock` | i3lock-color (separate script, predates phase 2) |
 
 The `nw-omarchy-` prefix is deliberate so we don't shadow the omarchy

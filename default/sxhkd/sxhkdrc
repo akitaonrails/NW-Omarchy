@@ -247,6 +247,12 @@ Print
 shift + Print
     nw-omarchy-cmd-screenshot region
 
+# Screenshot (delayed fullscreen) — 3-second countdown so you can open
+# a menu / rofi / dropdown that has the keyboard grab. Notification
+# shows the countdown.
+super + shift + Print
+    nw-omarchy-cmd-screenshot delayed-fullscreen
+
 # Screenrecording (omarchy: alt+Print → record menu)
 alt + Print
     nw-omarchy-menu Capture
