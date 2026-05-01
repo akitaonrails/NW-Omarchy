@@ -117,15 +117,17 @@ super + shift + alt + x
     nw-omarchy-launch-webapp "https://x.com/compose/post"
 
 #─── menus / launcher ─────────────────────────────────────────────────
+# Full app launcher: every .desktop entry on the system. Default chord
+# because "type to find any app" is the most-used flow.
+super + space
+    rofi -show drun -show-icons
+
 # Pinned-apps cheat-sheet: shows only apps with a custom binding (the
 # entries above), each labelled with its chord. Type to filter by name.
-super + space
-    nw-omarchy-launcher
-
-# Full drun: lists every .desktop entry on the system (escape hatch for
-# the rare app you haven't pinned a chord for).
+# Useful when you want to remember "what was that chord for Spotify?"
+# without leaving the keyboard.
 super + shift + space
-    rofi -show drun
+    nw-omarchy-launcher
 
 super + alt + space
     nw-omarchy-menu

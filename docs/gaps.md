@@ -18,7 +18,7 @@ The 178-helper gap is mostly omarchy's hardware/install/system internals which w
 - **Top bar** — polybar with the omarchy-logo launcher, per-module click actions, the same nerd-font icons waybar uses (audio/wifi/bluetooth/battery), and a custom-script battery module that handles the firmware-paused-on-AC state polybar's internal/battery silently dropped.
 - **Compositor effects** — upstream picom v13: blur, rounded corners, shadows, opacity-rule, fade-on-open/close. Replaces the abandoned FT-Labs fork whose animation system never engaged on bspwm tag changes. (We tried a custom workspace-pan slide on top of v13's trigger system; reverted to plain fade — see `docs/README.md`.)
 - **System menu** (`super+alt+space`) — 1:1 port of `omarchy-menu` via `rofi -dmenu`, every leaf
-- **App launcher** (`super+space`) — pinned-apps cheat-sheet parsed from sxhkdrc, type to filter, chord shown next to each
+- **App launcher** — `super+space` is the full `rofi -show drun` (every .desktop entry, type to filter); `super+shift+space` is the pinned-apps cheat-sheet parsed from sxhkdrc with chord shown next to each.
 - **Keybindings cheat-sheet** (`super+k`) — searchable list of every binding, with leading-comment as description
 - **Notifications** — dunst, themed via the same template pipeline as polybar/rofi/bspwm. `super+,` family dismisses (last/all/silence-toggle), parity with omarchy's mako `super+,` chords. Toast actions: clicking the screenshot toast opens the image (mirrors omarchy-cmd-screenshot's `notify-send -A` pattern).
 - **Per-app TUIs** — `super+ctrl+a/b/w/t/h/s` cover audio / bluetooth / wifi / btop / hardware-menu / share-menu via `nw-omarchy-launch-*` and `nw-omarchy-menu`, parity with omarchy's `super+ctrl+letter` family.
@@ -61,7 +61,7 @@ Wayland-only or out-of-scope, with no useful X11 cousin in our stack:
 | Pop-out window (`super + o` → float + pin) | Trivial in hypr (`togglefloating`+pin), in bspwm needs `bspc node -t floating; bspc node -g sticky=on` plus state to restore. Skipped; users who care can add it locally. |
 | Cursor zoom (`super + ctrl + z`) | X11 has no per-cursor zoom; xrandr `--scale` applies globally and looks heavy-handed. |
 | Active-window transparency toggle (`super + BackSpace` in hypr) | Would require a per-window picom opacity-rule manager. We use `super + BackSpace` for the gap-toggle that omarchy puts on `super + shift + BackSpace`. |
-| Waybar toggle (`super + shift + space`) | Reused that chord for `rofi -show drun` (full app listing) — felt more useful than a bar visibility toggle. polybar can still be toggled via `polybar-msg cmd toggle` if you bind it locally. |
+| Waybar toggle (`super + shift + space`) | Reused that chord for the pinned-apps cheat-sheet — felt more useful than a bar visibility toggle. polybar can still be toggled via `polybar-msg cmd toggle` if you bind it locally. |
 | Capture menu chord (`super + ctrl + c` in omarchy) | Reused for rofi-calc — calculator is more valuable on a laptop. Capture menu still reachable through `super + alt + space` → Capture. |
 
 ## Gaps worth filling 🔨

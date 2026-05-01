@@ -63,8 +63,8 @@ App launchers route through `nw-omarchy-launch-*` / `nw-omarchy-cmd-*` helpers i
 
 | Hyprland | X11 |
 |---|---|
-| `SUPER + SPACE` → walker | `super + space` → pinned-apps cheat-sheet (`nw-omarchy-launcher`) |
-| `SUPER + SHIFT + SPACE` → walker (full) | `super + shift + space` → `rofi -show drun` |
+| `SUPER + SPACE` → walker | `super + space` → `rofi -show drun -show-icons` (every .desktop entry) |
+| `SUPER + SHIFT + SPACE` → walker (full) | `super + shift + space` → pinned-apps cheat-sheet (`nw-omarchy-launcher`) — type to filter pinned apps with their chord |
 | `SUPER + CTRL + E` → emoji | `super + ctrl + e` → `rofi -show emoji` |
 | `SUPER + CTRL + C` → capture menu | _not ported_ — chord taken by rofi-calc; use `super+alt+space` → Capture |
 | `SUPER + CTRL + S` → share menu | `super + ctrl + s` → `nw-omarchy-menu Share` |
