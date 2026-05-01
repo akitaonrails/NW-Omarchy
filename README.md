@@ -8,12 +8,25 @@ XLibre is the project's X server target (a maintained `xorg-server` fork). It co
 
 ## Screenshots
 
+### Launchers / menus / TUIs
+
 | | |
 |---|---|
 | ![App launcher (super+space) — full drun with icons](docs/screenshots/launcher-drun.png) | ![Pinned-apps cheat-sheet (super+shift+space) — chord shown next to each binding](docs/screenshots/launcher-cheatsheet.png) |
 | **`super + space`** — full drun launcher (every `.desktop` on the system, with icons) | **`super + shift + space`** — pinned-apps cheat-sheet, chord shown next to each binding |
 | ![omarchy system menu (super+alt+space)](docs/screenshots/system-menu.png) | ![Wifi TUI (super+ctrl+w → impala)](docs/screenshots/wifi-tui.png) |
 | **`super + alt + space`** — 1:1 port of the omarchy system menu | **`super + ctrl + w`** — impala wifi TUI as a floating overlay (one of the per-app TUI bindings) |
+
+### Themes — every omarchy theme works as-is
+
+nw-omarchy plugs into omarchy's existing `omarchy-theme-set` pipeline: bspwm border, polybar, rofi, and dunst all repaint on every theme change, and the wallpaper rotates with the theme via our [`nw-omarchy-bg-watch`](bin/nw-omarchy-bg-watch) inotify daemon. The 19 themes shipped by omarchy (catppuccin, gruvbox, kanagawa, nord, tokyo-night, …) need zero porting work to look right under bspwm.
+
+| | |
+|---|---|
+| ![Ristretto theme](docs/screenshots/theme-ristretto.png) | ![Lumon theme](docs/screenshots/theme-lumon.png) |
+| **ristretto** — warm color-curves wallpaper | **lumon** — Severance "United in Severance" |
+| ![Everforest theme](docs/screenshots/theme-everforest.png) | ![Retro-82 theme](docs/screenshots/theme-retro-82.png) |
+| **everforest** — misty tree-tops | **retro-82** — synthwave grid |
 
 ## What this is not
 
