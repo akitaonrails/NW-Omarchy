@@ -86,8 +86,8 @@ App launchers route through `nw-omarchy-launch-*` / `nw-omarchy-cmd-*` helpers i
 | `SUPER + CTRL + Delete` → toggle laptop display | `super + ctrl + Delete` → `nw-omarchy-monitor-internal toggle` |
 | `SUPER + CTRL + ALT + T` → notify time | `super + ctrl + alt + t` → notify-send wrapper |
 | `SUPER + CTRL + ALT + B` → notify battery | `super + ctrl + alt + b` → notify-send wrapper |
-| Print → screenshot | `Print` → `nw-omarchy-cmd-screenshot region` (maim+slop+xclip+notify-send) |
-| `SHIFT + Print` → fullscreen | `shift + Print` → `nw-omarchy-cmd-screenshot fullscreen` |
+| Print → screenshot | `Print` → `nw-omarchy-cmd-screenshot fullscreen` (immediate, no crosshair — most common case) |
+| `SHIFT + Print` → fullscreen | `shift + Print` → `nw-omarchy-cmd-screenshot region` (slop crosshair selection) |
 | `ALT + Print` → screen record menu | `alt + Print` → `nw-omarchy-menu Capture` |
 | `SUPER + Print` → color picker | `super + Print` → `xcolor` → clipboard |
 

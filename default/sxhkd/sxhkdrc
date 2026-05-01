@@ -237,13 +237,15 @@ super + shift + equal
     bspc node -z bottom 0 100
 
 #─── screenshots / capture ───────────────────────────────────────────
-# Screenshot (region)
+# Screenshot (fullscreen) — bare Print fires immediately, no crosshair.
+# This is the most common "I just need a screenshot now" path.
 Print
-    nw-omarchy-cmd-screenshot region
-
-# Screenshot (fullscreen)
-shift + Print
     nw-omarchy-cmd-screenshot fullscreen
+
+# Screenshot (region) — slop crosshair selection. shift indicates the
+# more selective / slower path.
+shift + Print
+    nw-omarchy-cmd-screenshot region
 
 # Screenrecording (omarchy: alt+Print → record menu)
 alt + Print
