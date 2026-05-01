@@ -45,7 +45,8 @@ nw-omarchy-doctor        # lint live install (packages, themes, daemons, ...)
 - [docs/architecture.md](docs/architecture.md) — directory layout and conventions
 - [docs/gaps.md](docs/gaps.md) — parity with vanilla omarchy: what's done, what's intentionally dropped, what's still worth building
 - [docs/porting-hypr.md](docs/porting-hypr.md) — Hyprland binding/feature → X11 map
-- [docs/xlibre.md](docs/xlibre.md) — opt-in XLibre migration: what it touches, compatibility, revert recipe
+- [docs/why-xlibre.md](docs/why-xlibre.md) — what XLibre is, why we chose it, what we gain by staying on X11, what we lose vs Hypr/Wayland
+- [docs/xlibre.md](docs/xlibre.md) — what the install pipeline does for the X server swap, compatibility matrix, revert recipe
 
 ## Repo layout
 
