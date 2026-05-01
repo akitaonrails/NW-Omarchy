@@ -4,16 +4,14 @@ This doc covers the project's reasoning for targeting **XLibre** as its X server
 
 ## What is XLibre
 
-XLibre is a hard fork of the X.Org Server, started **June 2025** by **Enrico Weigelt** — a long-time, prolific X.Org contributor whose accounts and ~140 merge requests were abruptly removed from the freedesktop.org infrastructure earlier that year. The fork point is the upstream X.Org Server tree at the time of his departure; XLibre versions follow upstream's numbering ([XLibre 25.0](https://www.phoronix.com/news/XLibre-25.0-Released) was the inaugural release, mid-2025).
+XLibre is a hard fork of the X.Org Server, started in **2025**. The fork point is the upstream X.Org Server tree, and XLibre versions follow upstream's numbering — [XLibre 25.0](https://www.phoronix.com/news/XLibre-25.0-Released) was the inaugural release.
 
-The project's core technical pitch is simple: the upstream X.Org Server is, in its own maintainers' words, *effectively unmaintained beyond security/bug triage* — Red Hat has [publicly committed to dropping it from RHEL 10](https://www.redhat.com/en/blog/rhel-10-plans-wayland-and-xorg-server) (2025) and was the primary funder of new X-server development. XLibre takes the position that there are still real users who depend on X11 and that the codebase deserves continued active maintenance: cleanups, security fixes, modernization, driver-ABI updates.
+The project's core technical pitch is simple: the upstream X.Org Server is, in its own maintainers' words, *effectively unmaintained beyond security/bug triage* — Red Hat has [publicly committed to dropping it from RHEL 10](https://www.redhat.com/en/blog/rhel-10-plans-wayland-and-xorg-server) (2025) and was the primary funder of new X-server development. XLibre picks the work back up: cleanups, security fixes, modernization, driver-ABI updates.
 
 Distros that ship XLibre as default or tier-one packaging:
 - **Artix Linux** ([2026.04+](https://linuxiac.com/artix-linux-2026-04-released-with-xlibre-as-default-x-serve/)) — default X server
 - **Fedora** — [open Change proposal](https://fedoraproject.org/wiki/Changes) to migrate
 - **Arch Linux** — official binary repo at `x11libre.net/repo/arch_based/` (what nw-omarchy uses)
-
-A note on tone: XLibre's [README](https://github.com/X11Libre/xserver) and Weigelt's public statements include explicit political framing about the fork's circumstances and an empty Code of Conduct file ([coverage in El Reg](https://www.theregister.com/2025/06/10/xlibre_new_xorg_fork/), [Hacker News thread](https://news.ycombinator.com/item?id=44199502)). nw-omarchy uses XLibre on the technical merits — a maintained X server when nothing else fits — and has no opinion on its governance posture.
 
 ## Why XLibre over `xorg-server`
 
