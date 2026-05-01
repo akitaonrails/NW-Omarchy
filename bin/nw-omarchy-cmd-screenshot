@@ -49,5 +49,21 @@ if command -v xclip >/dev/null 2>&1; then
 fi
 
 if command -v notify-send >/dev/null 2>&1; then
-    notify-send "Screenshot saved" "$FILEPATH" -t 4000 -i "$FILEPATH" >/dev/null 2>&1 || true
+    # Background subshell so the screenshot script exits immediately;
+    # notify-send --wait blocks until the notification is dismissed
+    # (returning the action ID on stdout) which we use to xdg-open the
+    # file when the user left-clicks the toast. Middle-click opens the
+    # dunst context menu where "Show in folder" is available too.
+    (
+        action=$(notify-send -a 'screenshot' \
+            --action='default=Open' \
+            --action='folder=Show in folder' \
+            -t 4000 -i "$FILEPATH" \
+            'Screenshot saved' "$FILEPATH" 2>/dev/null)
+        case "$action" in
+            default) xdg-open "$FILEPATH" >/dev/null 2>&1 ;;
+            folder)  xdg-open "$(dirname "$FILEPATH")" >/dev/null 2>&1 ;;
+        esac
+    ) </dev/null >/dev/null 2>&1 &
+    disown
 fi

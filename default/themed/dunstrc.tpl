@@ -48,8 +48,12 @@
     ignore_dbusclose    = false
     force_xwayland      = false
     force_xinerama      = false
-    mouse_left_click    = close_current
-    mouse_middle_click  = do_action, close_current
+    # Left-click invokes the notification's default action (e.g. opening
+    # the screenshot file from nw-omarchy-cmd-screenshot's notification)
+    # and dismisses it. `do_action` is a no-op if the notification has
+    # no actions, so this is safe for plain notifications.
+    mouse_left_click    = do_action, close_current
+    mouse_middle_click  = context
     mouse_right_click   = close_all
 
 [urgency_low]
