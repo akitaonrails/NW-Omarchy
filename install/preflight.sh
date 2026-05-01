@@ -20,7 +20,7 @@ if [ "${XDG_SESSION_DESKTOP:-}" = "nw-bspwm" ]; then
 fi
 ok "not currently in nw-bspwm session"
 
-# AUR helper available (for FT-Labs picom + xlibre)
+# AUR helper available (for libinput-gestures-git + a couple of small AUR utils)
 AUR_HELPER=""
 for h in yay paru; do
     if command -v "$h" >/dev/null; then

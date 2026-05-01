@@ -167,5 +167,6 @@ wrappers — we just call them through:
 
 - **Window dimming on focus loss**: hypr `dim_inactive`. picom can do per-window opacity, but not focus-aware dim → too rough an approximation.
 - **Per-window scaling**: Wayland-only (X11 has no per-window scale).
-- **Workspace slide animation**: bspwm doesn't do compositor-side workspace transitions; picom-FT-Labs only animates per-window.
+- **Live-preview workspace swipe**: bspwm has no in-progress switch state, and libinput-gestures only fires on gesture completion. We do animate the post-completion transition on picom v13 (custom `offset-x` script using `window-monitor-width`), but it's a one-shot pan — no continuous-during-the-gesture preview like Hyprland's `workspace_swipe`.
+- **Direction-aware workspace slide**: picom v13 sees `show` / `hide` per window with no WM-action context, so the slide direction is fixed (out-left / in-right) regardless of next vs prev. Hyprland gets direction-aware swipes because Hyprland is both the WM and the compositor.
 - **`omarchy-hyprland-active-window-transparency-toggle`** etc.: hyprctl-based, would need a per-window picom opacity rule manager.

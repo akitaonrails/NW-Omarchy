@@ -6,8 +6,14 @@ bspwm
 sxhkd
 
 # --- Compositor (Hyprland-like eye candy) ---
-# FT-Labs picom: animations, blur, rounded corners, gradient borders.
-picom-ftlabs-git     (aur)
+# Upstream picom v13 (Feb 2026, Arch extra repo) — proper animation
+# system with show/hide/open/close triggers + custom offset-x scripts
+# for the workspace-slide effect. Replaced the abandoned
+# picom-ftlabs-git fork (last commit Feb 2024, animations never engaged
+# on bspwm tag-change events). pacman -S picom prompts to remove
+# picom-ftlabs-git on file conflict; existing installs need that swap
+# manually or via the migration script.
+picom
 libinput-gestures-git (aur)  # 3-finger swipe → workspace, etc
 
 # --- Bar / launcher / notifications ---
@@ -42,13 +48,8 @@ network-manager-applet
 blueman
 pasystray
 
-# --- XLibre Xorg server (NOT in default install) ---
-# xlibre-xserver-common-git declares `Conflicts=xorg-server-common` without
-# `Provides=xorg-server-common`. Removing xorg-server-common cascades to
-# xorg-xwayland → hyprland. So XLibre can only REPLACE Xorg, not coexist.
-# On a Hyprland machine this would uninstall Hyprland.
-#
-# bspwm runs fine on stock Xorg. If you're on a machine without Hyprland
-# and want XLibre anyway, install manually:  yay -S xlibre-xserver-git
-# and run: nw-omarchy-track record pkg xlibre-xserver-git
-# so uninstall still cleans it up.
+# --- XLibre Xorg server (NOT installed by packages.sh) ---
+# XLibre is the project's recommended X server, but the swap is
+# substantial enough that it's owned by a separate opt-in script:
+#   nw-omarchy-xlibre-migrate --apply
+# See docs/xlibre.md for what it touches and how to revert.

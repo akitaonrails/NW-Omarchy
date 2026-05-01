@@ -15,7 +15,7 @@ The 178-helper gap is mostly omarchy's hardware/install/system internals which w
 
 - **Window manager + bindings** — bspwm/sxhkd mirror hyprland's full binding map (apps, webapps, focus, swap, workspaces, resize, screenshots, multimedia)
 - **Top bar** — polybar with the omarchy-logo launcher, per-module click actions, and the same nerd-font icons waybar uses (audio/wifi/bluetooth/battery)
-- **Compositor effects** — picom-ftlabs animations (zoom-open / squeeze-close / slide-on-tag-change), blur, rounded corners, fade
+- **Compositor effects** — upstream picom v13: workspace-slide animation (windows pan in/out by one monitor-width together on workspace switch), blur, rounded corners, opacity fade. Replaces the abandoned FT-Labs fork whose animation system never engaged on bspwm tag changes.
 - **System menu** (`super+alt+space`) — 1:1 port of `omarchy-menu` via `rofi -dmenu`, every leaf
 - **App launcher** (`super+space`) — pinned-apps cheat-sheet parsed from sxhkdrc, type to filter, chord shown next to each
 - **Keybindings cheat-sheet** (`super+k`) — searchable list of every binding, with leading-comment as description
@@ -40,8 +40,9 @@ Wayland-only or out-of-scope, with no useful X11 cousin in our stack:
 | Component | Reason |
 |---|---|
 | Walker rich preview pane (theme picker) | Walker is Wayland-only; rofi has no preview equivalent |
-| Continuous workspace swipe with live preview | bspwm has no compositor camera; libinput-gestures fires on completion only |
-| Hyprland's `dim_inactive` focus dimming | picom-ftlabs has no focus-aware dim |
+| Continuous workspace swipe with **live preview** during the gesture | bspwm has no in-progress switch state; libinput-gestures fires on completion only. We do animate the post-completion transition via picom v13 (windows pan together by monitor-width). |
+| **Direction-aware** workspace slide (left for next, right for prev) | picom v13 doesn't know which direction the user asked bspwm to switch — `show`/`hide` triggers fire on individual windows with no WM-action context. Single fixed direction (out left / in right) regardless of next/prev. |
+| Hyprland's `dim_inactive` focus dimming | upstream picom has no focus-aware dim either; would need per-window opacity rule reshuffling on focus events |
 | Voxtype dictation | Wayland-only |
 | Native fractional scaling | X11 only does integer-per-output |
 | Polybar tooltips on hover | polybar 3.x limitation; right-click is our secondary path |

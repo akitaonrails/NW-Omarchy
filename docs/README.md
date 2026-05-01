@@ -52,7 +52,7 @@ Lints the live system in eight sections (Packages, Manifest, SDDM picker, Theme 
 
 ### XLibre is the X server target
 
-nw-omarchy is **omarchy on XLibre**: a bspwm + picom (FT-Labs) login session, on the maintained `xorg-server` fork. The project ships configs that work on either xorg-server or XLibre (every binding is libxcb/libx11 client-side), but the recommended deployment runs XLibre.
+nw-omarchy is **omarchy on XLibre**: a bspwm + picom v13 login session, on the maintained `xorg-server` fork. The project ships configs that work on either xorg-server or XLibre (every binding is libxcb/libx11 client-side), but the recommended deployment runs XLibre.
 
 Why not auto-swap during `install.sh`? Replacing the X server is substantially riskier than the rest of the install pipeline (which only touches user configs and the SDDM session entry). Keeping it as a deliberate post-install step lets you decide and lets the rest of the pipeline stay safely re-runnable on a vanilla omarchy box. The migration script is idempotent and self-checks against the current state:
 
@@ -66,9 +66,17 @@ Coexistence with Hyprland: the official `[xlibre]` binary repo packages declare 
 
 Full rationale, compatibility matrix, and rollback plan: [docs/xlibre.md](xlibre.md). `install/xlibre.sh` (run during the regular install pipeline) is diagnostic-only — it just reports the current X server.
 
-### picom-FT-Labs animations syntax has drifted
+### Compositor: upstream picom v13 (not a fork)
 
-The `animations = (...)` block in `default/picom/picom.conf` targets the FT-Labs fork's current syntax. If you upgrade the package and animations stop, check the [FT-Labs README](https://github.com/FT-Labs/picom) for the new keys — the `triggers` / `curve` / `duration` shape changes occasionally. Mainline picom silently ignores the block.
+We use **upstream `picom`** (Arch `extra` repo, v13, Feb 2026 release) — not a fork. Earlier iterations of this project shipped with `picom-ftlabs-git` (AUR), which is **abandoned** since Feb 2024. Worse, debug logs showed FT-Labs's animation system never actually engaged for bspwm workspace switches: `animation-for-next-tag` / `animation-for-prev-tag` were silently no-ops on bspwm because the FT-Labs hook listens for dwm-style retag events, not bspwm's unmap/map cycles.
+
+Upstream v13 ships a proper trigger-based animation system with separate `show` / `hide` triggers (visibility changes) distinct from `open` / `close` (window lifecycle). Our `default/picom/picom.conf` defines a custom workspace-slide animation: each window's `offset-x` is animated by exactly one `window-monitor-width`, so all windows slide together as a coherent workspace pan rather than per-window-bounds wiggle.
+
+Trade-offs:
+- Direction is fixed: outgoing slides left, incoming slides in from the right, regardless of next/prev. picom doesn't know which direction the user asked bspwm to switch in. Direction-aware animation would need a `bspc subscribe`-driven daemon swapping picom configs per switch.
+- `open` and `show` share the slide-in animation, because bspwm defers mapping windows on non-focused workspaces — a window's first visit fires `open`, subsequent visits fire `show`. New app launches therefore also slide in from the right.
+
+If you upgrade picom past v13 and the schema changes, the relevant docs are in `man picom` under the **ANIMATIONS** section (presets + custom scripts + context variables).
 
 ### Battery name on T14 Gen 6
 
