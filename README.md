@@ -6,6 +6,15 @@ A secondary login option for Omarchy: **bspwm + picom (upstream v13) on XLibre**
 
 XLibre is the project's X server target (a maintained `xorg-server` fork). It coexists cleanly with omarchy's hyprland (xorg-xwayland is untouched). `install.sh --apply` runs the swap as the last step of the pipeline. See [docs/xlibre.md](docs/xlibre.md) for what it touches and how to revert.
 
+## Screenshots
+
+| | |
+|---|---|
+| ![App launcher (super+space) — full drun with icons](docs/screenshots/launcher-drun.png) | ![Pinned-apps cheat-sheet (super+shift+space) — chord shown next to each binding](docs/screenshots/launcher-cheatsheet.png) |
+| **`super + space`** — full drun launcher (every `.desktop` on the system, with icons) | **`super + shift + space`** — pinned-apps cheat-sheet, chord shown next to each binding |
+| ![omarchy system menu (super+alt+space)](docs/screenshots/system-menu.png) | ![Wifi TUI (super+ctrl+w → impala)](docs/screenshots/wifi-tui.png) |
+| **`super + alt + space`** — 1:1 port of the omarchy system menu | **`super + ctrl + w`** — impala wifi TUI as a floating overlay (one of the per-app TUI bindings) |
+
 ## What this is not
 
 - A replacement for Omarchy. Hyprland keeps working. Pick your session at SDDM.
