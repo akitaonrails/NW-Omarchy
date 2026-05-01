@@ -78,6 +78,34 @@ parse() {
     ' "$file"
 }
 
+# Best-effort: derive an icon name from a command line. The first non-flag
+# token is usually the app binary or class. nw-omarchy-launch-{or-focus,
+# tui,or-focus-webapp,…} take the class as their second arg, so we use that.
+# Misses (e.g. unknown class) are silent — rofi just shows no icon.
+icon_for() {
+    local cmd="$1"
+    local first second
+    read -r first second _ <<<"$cmd"
+    case "$first" in
+        nw-omarchy-launch-or-focus|nw-omarchy-launch-or-focus-tui|nw-omarchy-launch-or-focus-webapp|nw-omarchy-launch-tui)
+            printf '%s' "${second//\"/}" ;;
+        nw-omarchy-launch-webapp|nw-omarchy-launch-browser)
+            printf 'google-chrome' ;;
+        nw-omarchy-launch-editor)
+            printf 'visual-studio-code' ;;
+        nw-omarchy-launch-floating-terminal)
+            printf '%s' "${second:-utilities-terminal}" ;;
+        sh|bash)
+            # sh -c '...' wrappers — fish a class out of the body if present.
+            printf '%s' "$cmd" \
+                | grep -oE 'class_g[[:space:]]*=[[:space:]]*'\''[^'\'']+'\'' ' \
+                | head -1 | tr -d "'" | awk '{print $NF}'
+            ;;
+        *)
+            printf '%s' "$first" ;;
+    esac
+}
+
 declare -A SEEN
 declare -A CMD_BY_LINE
 LINES=()
@@ -87,7 +115,13 @@ for ((i=${#SOURCES[@]}-1; i>=0; i--)); do
         if [ -z "${SEEN[$chord]:-}" ]; then
             SEEN[$chord]=1
             printf -v row '%-18s    %s' "$label" "$chord"
-            LINES+=("$row")
+            icon=$(icon_for "$cmd")
+            # rofi dmenu icon protocol: <row>\0icon\x1f<name>
+            if [ -n "$icon" ]; then
+                LINES+=("$(printf '%s\0icon\x1f%s' "$row" "$icon")")
+            else
+                LINES+=("$row")
+            fi
             CMD_BY_LINE[$row]="$cmd"
         fi
     done < <(parse "${SOURCES[$i]}")
@@ -104,7 +138,7 @@ fi
 # a long string of binding names instead of :0 (the bug that made super+K
 # silently fail before).
 output=$(printf '%s\n' "${LINES[@]}")
-choice=$(echo -n "$output" | rofi -dmenu -i -p "Launch…" \
+choice=$(echo -n "$output" | rofi -dmenu -i -p "Launch…" -show-icons \
     -theme-str 'window { width: 880px; } listview { lines: 12; } * { font: "JetBrainsMono Nerd Font Mono 18"; }' \
     -no-fixed-num-lines)
 

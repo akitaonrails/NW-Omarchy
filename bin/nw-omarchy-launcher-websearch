@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# nw-omarchy-launcher-websearch — rofi prompt that opens the typed query
+# in the default browser via the configured search engine.
+#
+# Substitute for omarchy/walker's `websearch` provider. Bound by default
+# to super+slash (sxhkdrc).
+#
+# Configurable engine via env var:
+#   NW_OMARCHY_SEARCH_URL  default https://duckduckgo.com/?q=
+# The query is appended URL-encoded.
+
+set -euo pipefail
+
+URL="${NW_OMARCHY_SEARCH_URL:-https://duckduckgo.com/?q=}"
+
+query=$(printf '' | rofi -dmenu -p "Web search" \
+    -theme-str 'window { width: 700px; } * { font: "JetBrainsMono Nerd Font Mono 18"; }' \
+    -no-fixed-num-lines)
+[ -z "$query" ] && exit 0
+
+# URL-encode (pure bash, no jq / python dependency)
+encode() {
+    local s=$1 i char enc=""
+    for ((i=0; i<${#s}; i++)); do
+        char="${s:i:1}"
+        case "$char" in
+            [a-zA-Z0-9.~_-]) enc+="$char" ;;
+            *) enc+=$(printf '%%%02X' "'$char") ;;
+        esac
+    done
+    printf '%s' "$enc"
+}
+
+xdg-open "${URL}$(encode "$query")" >/dev/null 2>&1

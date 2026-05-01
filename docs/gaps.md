@@ -36,6 +36,9 @@ The 178-helper gap is mostly omarchy's hardware/install/system internals which w
 - **Update-available indicator** — polybar `module/update` polls `omarchy-update-available` every 10 min; click runs `omarchy-update` in a floating terminal
 - **Calculator in launcher** — `super+ctrl+c` opens rofi calc mode; Enter copies the result to clipboard
 - **Color picker** — `super+Print` runs `xcolor` and copies the hex to clipboard (xcolor is the X11 substitute for hyprpicker)
+- **App launcher icons** — `nw-omarchy-launcher` (super+space) emits the rofi dmenu icon protocol (`\0icon\x1f<name>`) per row; icons resolve through the active icon theme (Papirus / Adwaita). Heuristic class derivation from the binding's command — covers `nw-omarchy-launch-*` helpers and bare commands.
+- **Web search** (`super+slash`) — `nw-omarchy-launcher-websearch` opens a rofi prompt and feeds the URL-encoded query to the default browser via `xdg-open`. Engine override via `NW_OMARCHY_SEARCH_URL` env var (default DuckDuckGo). Replaces walker's `websearch` provider.
+- **Picom rules-block config** — migrated off the legacy `shadow-exclude` / `blur-background-exclude` / `opacity-rule` / `rounded-corners-exclude` / `wintypes` family to picom v13's unified `rules = (...)` block. Same visual behaviour, but per-window animations are now suppressible (e.g. for slop/rofi/dunst), which unlocks future work like a direction-aware workspace pan.
 
 ## Intentional drops ⛔
 
@@ -67,12 +70,9 @@ What's still open and worth picking up. Ordered by effort × value:
 
 | # | Gap | Effort | Notes |
 |---:|---|---|---|
-| 1 | **Icons in app launcher** | ~5 min | `show-icons` is currently off in `nw-omarchy-launcher`. Re-enabling shows app icons next to labels (matches walker). Pure cosmetic. |
-| 2 | **Web-search provider in launcher** | ~30 min | Walker has a `websearch` provider; rofi has no built-in equivalent. Custom rofi mode (small bash script) that forwards typed input to a search engine via `xdg-open` would close it. |
-| 3 | **Migrate picom config to v13 `rules` block** | ~2 h | Required to suppress per-window animations (e.g. on slop / rofi / dunst). Forces moving every legacy `shadow-exclude` / `blur-background-exclude` / `opacity-rule` / `wintypes` / `rounded-corners-exclude` into the rules block in one shot — picom v13 ignores those legacy keys when `rules` is set. Prerequisite if we ever want the workspace-pan slide back. |
-| 4 | **Direction-aware workspace animation** | ~3 h | Daemon listening to `bspc subscribe desktop_focus`, computing forward / backward, and either swapping picom configs or sending a custom IPC. Depends on (3). |
-| 5 | **Pre-1.0 → 1.0 migration story** | ~1 h | `bin/nw-omarchy-xlibre-migrate` is a stub. Before we cut 1.0, decide what migration deltas matter (picom-ftlabs-git → picom auto-removal, config schema bumps) and grow the script body. |
-| 6 | **Pop-out / scratchpad** if you actually use them | ~1 h each | `super + o` and `super + s` from omarchy v2 — not core to bspwm's model but doable with `bspc node -g sticky=on, hidden=on` plus a state file. |
+| 1 | **Direction-aware workspace animation** | ~3 h | With the picom v13 rules-block migration done (see "At parity"), per-window animations are suppressible — slop/rofi/dunst could opt out while regular windows opt in. The remaining piece is a `bspc subscribe desktop_focus` daemon that detects forward/backward and swaps which animation rule fires. |
+| 2 | **Pre-1.0 → 1.0 migration story** | ~1 h | `bin/nw-omarchy-xlibre-migrate` is a stub. Before we cut 1.0, decide what migration deltas matter (picom-ftlabs-git → picom auto-removal, config schema bumps) and grow the script body. |
+| 3 | **Pop-out / scratchpad** if you actually use them | ~1 h each | `super + o` and `super + s` from omarchy v2 — not core to bspwm's model but doable with `bspc node -g sticky=on, hidden=on` plus a state file. |
 
 ## Not worth doing ❌
 

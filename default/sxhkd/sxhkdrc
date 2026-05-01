@@ -143,6 +143,10 @@ super + ctrl + c
 super + k
     nw-omarchy-menu-keybindings
 
+# Web search (parity with omarchy walker's websearch provider)
+super + slash
+    nw-omarchy-launcher-websearch
+
 #─── clipboard history (rofi-backed; CM_LAUNCHER=rofi set in bspwmrc) ──
 # NOTE: omarchy's super+c / super+v / super+x universal copy/paste/cut
 # bindings are NOT ported. On X11 we couldn't reliably synthesise the
