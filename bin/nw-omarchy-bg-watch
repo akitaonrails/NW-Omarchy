@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Re-apply the desktop wallpaper whenever omarchy switches the active
+# theme's background. omarchy-theme-set ends by:
+#   1. Calling omarchy-theme-bg-next which updates the
+#      ~/.config/omarchy/current/background symlink to point at the
+#      next image in the active theme's backgrounds/ directory
+#   2. Calling omarchy-theme-set-templates which rewrites the rendered
+#      theme files (also in ~/.config/omarchy/current/)
+#   3. Calling omarchy-hook theme-set "$THEME_NAME" — exactly one
+#      script per event, reserved for the user's own GTK / Papirus
+#      logic, so we can't drop a hook there without clobbering theirs.
+#
+# We watch ~/.config/omarchy/current/ via inotify and re-`feh` the
+# background symlink whenever it (or theme.name) changes. Same pattern
+# used by nw-omarchy-dunst-watch.
+#
+# Autostarted from bspwmrc.
+
+set -e
+
+WATCH_DIR="$HOME/.config/omarchy/current"
+BG_LINK="$WATCH_DIR/background"
+[ -d "$WATCH_DIR" ] || exit 0
+
+if ! command -v inotifywait >/dev/null 2>&1; then
+    echo "nw-omarchy-bg-watch: inotifywait not found (install inotify-tools)" >&2
+    exit 0
+fi
+
+apply_bg() {
+    local img
+    img=$(readlink -f "$BG_LINK" 2>/dev/null) || return 0
+    [ -f "$img" ] || return 0
+    feh --no-fehbg --bg-fill "$img" >/dev/null 2>&1 || true
+}
+
+# Apply once at start so the wallpaper is correct right after the
+# watcher launches (covers the case where bspwmrc's initial feh call
+# raced ahead of the symlink being current).
+apply_bg
+
+while inotifywait -qq -e modify -e create -e close_write -e move "$WATCH_DIR" 2>/dev/null; do
+    # Let omarchy-theme-set finish all of its rewrite steps before we
+    # repaint — picking up a half-written symlink would briefly flash
+    # the previous theme's wallpaper.
+    sleep 0.3
+    apply_bg
+done

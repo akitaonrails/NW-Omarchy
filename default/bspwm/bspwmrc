@@ -148,6 +148,14 @@ if command -v nw-omarchy-dunst-watch >/dev/null 2>&1; then
     nw-omarchy-dunst-watch >/dev/null 2>&1 &
 fi
 
+# Wallpaper re-painter — feh -bg-fill the symlinked background whenever
+# omarchy-theme-set rotates it. Same inotify pattern as dunst-watch
+# above; documented rationale at top of nw-omarchy-bg-watch.
+pkill -f nw-omarchy-bg-watch >/dev/null 2>&1 || true
+if command -v nw-omarchy-bg-watch >/dev/null 2>&1; then
+    nw-omarchy-bg-watch >/dev/null 2>&1 &
+fi
+
 # Low-battery notifier — reuses omarchy's existing systemd user timer
 # (~/.config/systemd/user/omarchy-battery-monitor.timer). Idempotent: start
 # is a no-op if already running. systemctl --user gracefully no-ops if the
