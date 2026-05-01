@@ -96,11 +96,16 @@ icon_for() {
         nw-omarchy-launch-floating-terminal)
             printf '%s' "${second:-utilities-terminal}" ;;
         sh|bash)
-            # sh -c '...' wrappers — fish a class out of the body if present.
-            printf '%s' "$cmd" \
-                | grep -oE 'class_g[[:space:]]*=[[:space:]]*'\''[^'\'']+'\'' ' \
-                | head -1 | tr -d "'" | awk '{print $NF}'
-            ;;
+            # sh -c '...' wrappers usually invoke a recognisable binary
+            # somewhere in the body. Pull the first non-flag token after
+            # `-c '` and use that as the icon hint. Tolerant of failure:
+            # `set -e` / `pipefail` are active in the parent script and
+            # any non-matching grep would abort the whole launcher.
+            local body app
+            body="${cmd#*-c }"
+            body="${body#\'}"; body="${body#\"}"
+            read -r app _ <<<"$body"
+            printf '%s' "$app" ;;
         *)
             printf '%s' "$first" ;;
     esac
@@ -108,39 +113,47 @@ icon_for() {
 
 declare -A SEEN
 declare -A CMD_BY_LINE
-LINES=()
+LABELS=()
+ICONS=()
 for ((i=${#SOURCES[@]}-1; i>=0; i--)); do
     while IFS=$'\t' read -r chord label cmd; do
         [ -z "$chord" ] && continue
         if [ -z "${SEEN[$chord]:-}" ]; then
             SEEN[$chord]=1
             printf -v row '%-18s    %s' "$label" "$chord"
-            icon=$(icon_for "$cmd")
-            # rofi dmenu icon protocol: <row>\0icon\x1f<name>
-            if [ -n "$icon" ]; then
-                LINES+=("$(printf '%s\0icon\x1f%s' "$row" "$icon")")
-            else
-                LINES+=("$row")
-            fi
+            LABELS+=("$row")
+            ICONS+=("$(icon_for "$cmd")")
             CMD_BY_LINE[$row]="$cmd"
         fi
     done < <(parse "${SOURCES[$i]}")
 done
 
-if [ "${#LINES[@]}" -eq 0 ]; then
+if [ "${#LABELS[@]}" -eq 0 ]; then
     notify-send -u low "No pinned app bindings found" \
         "Add a leading '# Label' comment to bindings in the apps / webapp sections."
     exit 0
 fi
 
-# `output` here intentionally is NOT named DISPLAY — that variable name
-# would shadow the X11 $DISPLAY env var and rofi would try to connect to
-# a long string of binding names instead of :0 (the bug that made super+K
+# Pipe directly to rofi: the icon protocol uses \0 as a record-internal
+# separator, which bash command substitution would strip. So we keep
+# labels and icons in parallel arrays and emit the protocol to rofi's
+# stdin via printf — no $(...) roundtrip.
+#
+# `output` (when used) intentionally is NOT named DISPLAY: that name
+# shadows the X11 $DISPLAY env var and rofi would try to connect to a
+# long string of binding names instead of :0 (the bug that made super+k
 # silently fail before).
-output=$(printf '%s\n' "${LINES[@]}")
-choice=$(echo -n "$output" | rofi -dmenu -i -p "Launch…" -show-icons \
-    -theme-str 'window { width: 880px; } listview { lines: 12; } * { font: "JetBrainsMono Nerd Font Mono 18"; }' \
-    -no-fixed-num-lines)
+choice=$(
+    for ((j=0; j<${#LABELS[@]}; j++)); do
+        if [ -n "${ICONS[$j]:-}" ]; then
+            printf '%s\0icon\x1f%s\n' "${LABELS[$j]}" "${ICONS[$j]}"
+        else
+            printf '%s\n' "${LABELS[$j]}"
+        fi
+    done | rofi -dmenu -i -p "Launch…" -show-icons \
+        -theme-str 'window { width: 880px; } listview { lines: 12; } * { font: "JetBrainsMono Nerd Font Mono 18"; }' \
+        -no-fixed-num-lines
+)
 
 [ -z "$choice" ] && exit 0
 
