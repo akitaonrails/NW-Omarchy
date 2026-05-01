@@ -1,6 +1,6 @@
 # nw-omarchy
 
-A secondary login option for Omarchy: **bspwm + picom (upstream v13) on XLibre**, layered on top of an existing Omarchy install. Ports as much of the Hyprland look-and-feel and keybindings as the X11 stack allows — including a workspace-slide animation built on picom v13's trigger system — all running on a maintained X server.
+A secondary login option for Omarchy: **bspwm + picom (upstream v13) on XLibre**, layered on top of an existing Omarchy install. Ports as much of the Hyprland look-and-feel and keybindings as the X11 stack allows — rounded corners, blur, shadows, fade-on-open/close — all running on a maintained X server.
 
 > "Not Wayland Omarchy." Sits parallel to Hyprland — your Omarchy session is untouched.
 

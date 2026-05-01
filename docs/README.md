@@ -71,13 +71,14 @@ Full rationale, compatibility matrix, and rollback plan: [docs/xlibre.md](xlibre
 
 We use **upstream `picom`** (Arch `extra` repo, v13, Feb 2026 release) — not a fork. Earlier iterations of this project shipped with `picom-ftlabs-git` (AUR), which is **abandoned** since Feb 2024. Worse, debug logs showed FT-Labs's animation system never actually engaged for bspwm workspace switches: `animation-for-next-tag` / `animation-for-prev-tag` were silently no-ops on bspwm because the FT-Labs hook listens for dwm-style retag events, not bspwm's unmap/map cycles.
 
-Upstream v13 ships a proper trigger-based animation system with separate `show` / `hide` triggers (visibility changes) distinct from `open` / `close` (window lifecycle). Our `default/picom/picom.conf` defines a custom workspace-slide animation: each window's `offset-x` is animated by exactly one `window-monitor-width`, so all windows slide together as a coherent workspace pan rather than per-window-bounds wiggle.
+Upstream v13 ships a proper trigger-based animation system. We tried it: a custom `offset-x` script that shifted every window by `window-monitor-width` on `show` / `hide` so they slid together as a coherent workspace pan. It worked, but two things kept it out of the shipping config:
 
-Trade-offs:
-- Direction is fixed: outgoing slides left, incoming slides in from the right, regardless of next/prev. picom doesn't know which direction the user asked bspwm to switch in. Direction-aware animation would need a `bspc subscribe`-driven daemon swapping picom configs per switch.
-- `open` and `show` share the slide-in animation, because bspwm defers mapping windows on non-focused workspaces — a window's first visit fires `open`, subsequent visits fire `show`. New app launches therefore also slide in from the right.
+1. **No direction awareness.** picom v13 has no WM-action context; the slide was fixed at out-left / in-right regardless of whether the user pressed next or prev. A `bspc subscribe`-driven daemon could swap configs per switch, but adds complexity for what's still a one-shot animation.
+2. **slop overlay also got animated.** The screenshot region selector hits picom as `open`, so it slid in too. Suppressing per-window requires migrating every legacy exclude / wintype / opacity option into picom v13's new `rules` block in the same change — bigger rewrite than the feature warrants right now.
 
-If you upgrade picom past v13 and the schema changes, the relevant docs are in `man picom` under the **ANIMATIONS** section (presets + custom scripts + context variables).
+So the current shipping config has no `animations = (...)` block — picom falls back to the legacy `fading = true` block above for a simple opacity fade on open/close/show/hide. Rounded corners, blur, shadows, opacity-rules all unchanged.
+
+If you upgrade picom past v13 and the schema changes, the relevant docs are in `man picom` under the **ANIMATIONS** and **WINDOW RULES** sections.
 
 ### Battery name on T14 Gen 6
 
