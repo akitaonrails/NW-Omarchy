@@ -71,8 +71,11 @@ What's still open and worth picking up. Ordered by effort × value:
 | # | Gap | Effort | Notes |
 |---:|---|---|---|
 | 1 | **Direction-aware workspace animation** | ~3 h | With the picom v13 rules-block migration done (see "At parity"), per-window animations are suppressible — slop/rofi/dunst could opt out while regular windows opt in. The remaining piece is a `bspc subscribe desktop_focus` daemon that detects forward/backward and swaps which animation rule fires. |
-| 2 | **Pre-1.0 → 1.0 migration story** | ~1 h | `bin/nw-omarchy-xlibre-migrate` is a stub. Before we cut 1.0, decide what migration deltas matter (picom-ftlabs-git → picom auto-removal, config schema bumps) and grow the script body. |
-| 3 | **Pop-out / scratchpad** if you actually use them | ~1 h each | `super + o` and `super + s` from omarchy v2 — not core to bspwm's model but doable with `bspc node -g sticky=on, hidden=on` plus a state file. |
+| 2 | **Pop-out / scratchpad** if you actually use them | ~1 h each | `super + o` and `super + s` from omarchy v2 — not core to bspwm's model but doable with `bspc node -g sticky=on, hidden=on` plus a state file. |
+
+### Pre-1.0: no migration tool
+
+`install.sh --apply` is the canonical path to the latest target state, idempotent, safe to re-run. It auto-removes known predecessor packages (currently `picom-ftlabs-git` → `picom`) so re-running after a repo pull converges cleanly even on previously-installed systems. `bin/nw-omarchy-xlibre-migrate` will stay a no-op stub until we cut 1.0+ tags and need to express deltas between them.
 
 ## Not worth doing ❌
 
@@ -83,11 +86,9 @@ What's still open and worth picking up. Ordered by effort × value:
 
 ## Recommended next moves
 
-The original "top five" items (mic-mute LED, battery notifier, update indicator, idle screensaver, calculator) all landed. Picom v13 + XLibre + binding parity also landed. The project is now in polish territory:
+The original "top five" items (mic-mute LED, battery notifier, update indicator, idle screensaver, calculator) all landed. picom v13, XLibre, binding parity, launcher icons, web-search, and the rules-block migration all landed too. The project is now in polish territory:
 
-1. **Icons in app launcher** (5 min, cosmetic)
-2. **Web-search launcher provider** (30 min, nice-to-have parity)
-3. **picom rules-block migration** if you want to revisit the workspace-pan slide (2h, prereq for direction-aware swipe)
-4. **Pre-1.0 → 1.0 migration story** before the first tag (1h)
+1. **Direction-aware workspace animation** (~3h) — closes the last meaningful animation gap
+2. **Pop-out / scratchpad** if you actually miss them in daily use
 
-Beyond those, deeper omarchy parity hits the X11 ceiling — see "Intentional drops" — so further effort returns diminishing UX gains. Live with it for a few weeks before deciding whether anything in the drops list is actually missed in daily use.
+Beyond those, deeper omarchy parity hits the X11 ceiling — see "Intentional drops" — so further effort returns diminishing UX gains. Live with it for a few weeks before deciding whether anything in the drops list is actually missed.

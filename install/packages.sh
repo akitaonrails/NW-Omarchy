@@ -47,6 +47,27 @@ run() {
     fi
 }
 
+# Pre-1.0: known predecessor packages that pacman cannot replace
+# automatically (the new package's PKGBUILD doesn't declare
+# `replaces=`). Removed before we install the canonical version so
+# `pacman -S --noconfirm` doesn't abort on a file conflict.
+#
+# This is install logic, not a "migration" — re-running install.sh
+# always converges to the same target state from any starting point.
+# Once we tag 1.0+ this list moves into a versioned migration script
+# and stops growing here.
+PRE_INSTALL_REMOVE=(
+    picom-ftlabs-git    # was the AUR fork; superseded by upstream picom v13
+)
+for old in "${PRE_INSTALL_REMOVE[@]}"; do
+    if pacman -Qq "$old" >/dev/null 2>&1; then
+        echo "==> removing predecessor: $old"
+        # -R (not -Rs): leave dependencies alone; the canonical package
+        # we install next will satisfy any provides= relationships.
+        run sudo pacman -R --noconfirm "$old"
+    fi
+done
+
 # Decide for one package whether it goes in the install list.
 # Idempotency check order: first the manifest, then pacman -Q. This way
 # a re-run after a successful apply doesn't add a duplicate `pkg-skip`
