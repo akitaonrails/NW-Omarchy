@@ -75,6 +75,21 @@ nw-omarchy-status        # what's tracked, what would be removed
 nw-omarchy-doctor        # lint live install (packages, themes, daemons, ...)
 ```
 
+## Upgrade
+
+```bash
+nw-omarchy-upgrade --check   # current vs latest, exit
+nw-omarchy-upgrade           # yay -Syu, fetch new tag, run migrations, install
+```
+
+The script:
+
+1. Runs `yay -Syu --noconfirm` (or `pacman -Syu` if yay isn't installed) for the system packages.
+2. Compares the local installed tag against the latest `v*` tag on the remote.
+3. If a new tag is available: `git fetch && git checkout v<latest>`, runs every `migrations/<v>.sh` between current and latest in version-sort order, then `install.sh --apply`, then writes the new version to `~/.local/state/nw-omarchy/version`.
+
+Pass `--no-pacman` to skip the system upgrade and only update nw-omarchy. Pass `--yes` to skip confirmation prompts.
+
 ## Documentation
 
 - [docs/README.md](docs/README.md) — what works, what doesn't, gotchas
@@ -88,13 +103,15 @@ nw-omarchy-doctor        # lint live install (packages, themes, daemons, ...)
 
 | Path | Purpose |
 |---|---|
-| `install.sh` / `uninstall.sh` | Top-level entry points |
-| `bin/nw-omarchy-*` | Runtime CLI (install, uninstall, status, track) |
+| `install.sh` / `uninstall.sh` / `boot.sh` | Top-level entry points |
+| `bin/nw-omarchy-*` | Runtime CLI (install, uninstall, status, track, upgrade) |
 | `install/*.sh` | Idempotent install steps; each calls `nw-omarchy-track` |
+| `migrations/*.sh` | Versioned upgrade steps run by `nw-omarchy-upgrade`. See `migrations/README.md`. |
 | `default/{bspwm,sxhkd,picom,polybar,rofi,xinit}/` | Configs symlinked into `~/.config` |
 | `default/xsessions/nw-bspwm.desktop` | The SDDM session file |
 | `packages/nw-omarchy.packages` | Pacman/AUR package list |
 | `docs/` | The "what worked" docs (omarchy-style) |
+| `VERSION` / `LICENSE` | Release version (one line, semver) and GPLv3 license text |
 
 ## Conventions inherited from Omarchy
 
@@ -114,3 +131,7 @@ install.log      # last install run output
 ```
 
 Uninstall replays this in reverse. Lose the state dir → uninstall becomes manual; back it up if you care.
+
+## License
+
+GPL v3 — see [LICENSE](LICENSE).

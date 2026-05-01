@@ -98,17 +98,34 @@ EOF
     esac
 fi
 
-# ── clone / update ──────────────────────────────────────────────────
+# ── clone / update — pin to the latest stable tag ──────────────────
+# Tag-based deployment so users land on a known-good release rather
+# than HEAD of master. Falls back to default branch only if the repo
+# has no v* tags yet (pre-1.0 emergency).
+LATEST_TAG=$(git ls-remote --tags --refs --sort='-v:refname' "$REPO_URL" 'v*' 2>/dev/null \
+    | head -1 | awk '{print $2}' | sed 's|refs/tags/||')
+
 if [ -d "$TARGET/.git" ]; then
     echo
     bold "==> updating existing nw-omarchy clone"
-    git -C "$TARGET" fetch --quiet
-    git -C "$TARGET" pull --ff-only
+    git -C "$TARGET" fetch --tags --quiet
+    if [ -n "$LATEST_TAG" ]; then
+        git -C "$TARGET" checkout --quiet "$LATEST_TAG"
+        echo "    checked out $LATEST_TAG"
+    else
+        git -C "$TARGET" pull --ff-only
+    fi
 else
     echo
-    bold "==> cloning nw-omarchy → $TARGET"
-    mkdir -p "$(dirname "$TARGET")"
-    git clone --depth 1 "$REPO_URL" "$TARGET"
+    if [ -n "$LATEST_TAG" ]; then
+        bold "==> cloning nw-omarchy $LATEST_TAG → $TARGET"
+        mkdir -p "$(dirname "$TARGET")"
+        git clone --depth 1 --branch "$LATEST_TAG" "$REPO_URL" "$TARGET"
+    else
+        bold "==> cloning nw-omarchy → $TARGET (no tags yet, using default branch)"
+        mkdir -p "$(dirname "$TARGET")"
+        git clone --depth 1 "$REPO_URL" "$TARGET"
+    fi
 fi
 
 # ── install ─────────────────────────────────────────────────────────

@@ -27,11 +27,22 @@ step alacritty
 # laid down so a failure here doesn't leave the bspwm session half-set-up.
 step xlibre
 
+# Stamp the installed version into state. nw-omarchy-upgrade reads this
+# to compute the migration window between the installed version and the
+# latest tag. Source of truth is the VERSION file at the repo root —
+# kept in sync with the git tags by the release process.
+if [ "$DRY_RUN" != "1" ] && [ -f "$NW_OMARCHY_PATH/VERSION" ]; then
+    cp "$NW_OMARCHY_PATH/VERSION" "$NW_OMARCHY_STATE/version"
+fi
+
 echo
 echo "==> nw-omarchy: install pipeline complete"
 if [ "$DRY_RUN" = "1" ]; then
     echo "==> this was a dry run. Re-run with --apply to commit changes."
 else
     echo "==> manifest: $NW_OMARCHY_STATE/manifest.tsv"
+    if [ -f "$NW_OMARCHY_STATE/version" ]; then
+        echo "==> version:  $(cat "$NW_OMARCHY_STATE/version")"
+    fi
     echo "==> log out and pick 'nw-bspwm' from the SDDM session menu on next login."
 fi

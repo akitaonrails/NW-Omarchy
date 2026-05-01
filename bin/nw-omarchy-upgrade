@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+# nw-omarchy-upgrade — system + repo upgrade with versioned migrations.
+#
+# Pipeline:
+#   1. yay -Syu --noconfirm  (or pacman if yay isn't installed)
+#   2. git fetch latest tag from upstream → checkout if newer
+#   3. run any migrations between the previously-installed version and
+#      the new one (migrations/<target>.sh, see migrations/README.md)
+#   4. run install.sh --apply to converge the rest of the system state
+#   5. update the local version stamp
+#
+# Tracks the locally-installed version at:
+#   $XDG_STATE_HOME/nw-omarchy/version
+#   (defaults to ~/.local/state/nw-omarchy/version)
+#
+# Usage:
+#   nw-omarchy-upgrade           # do everything
+#   nw-omarchy-upgrade --check   # report current vs latest, exit
+#   nw-omarchy-upgrade --no-pacman # skip the system package upgrade
+#   nw-omarchy-upgrade --yes     # skip confirmation prompts
+
+set -euo pipefail
+
+REPO_URL='https://github.com/akitaonrails/NW-Omarchy'
+REPO_PATH="$HOME/.local/share/nw-omarchy"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/nw-omarchy"
+VERSION_FILE="$STATE_DIR/version"
+
+check_only=0
+no_pacman=0
+auto_yes=0
+for a in "$@"; do
+    case "$a" in
+        --check)     check_only=1 ;;
+        --no-pacman) no_pacman=1 ;;
+        --yes|-y)    auto_yes=1 ;;
+        --help|-h)
+            sed -n '2,/^$/p' "$0" | sed 's/^# \?//'
+            exit 0 ;;
+        *) echo "unknown flag: $a" >&2; exit 2 ;;
+    esac
+done
+
+say()   { printf '%s\n' "$*"; }
+bold()  { printf '\033[1m%s\033[0m\n' "$*"; }
+green() { printf '\033[32m%s\033[0m\n' "$*"; }
+
+mkdir -p "$STATE_DIR"
+
+# ── current vs latest ───────────────────────────────────────────────
+current=$(cat "$VERSION_FILE" 2>/dev/null || echo "0.0")
+
+# Pull the latest semver tag from the remote (vX.Y.Z form). git
+# ls-remote sorts in lexical order; --sort='-v:refname' gives version
+# order DESC so head -1 is the newest.
+latest_ref=$(git ls-remote --tags --refs --sort='-v:refname' "$REPO_URL" 'v*' 2>/dev/null \
+    | head -1 | awk '{print $2}')
+latest=${latest_ref#refs/tags/v}
+
+if [ -z "$latest" ]; then
+    say "WARNING: no v* tags found on $REPO_URL — falling back to default branch."
+    latest='master'
+fi
+
+bold "==> nw-omarchy-upgrade"
+say  "  current: $current"
+say  "  latest:  $latest"
+
+if [ "$check_only" = 1 ]; then
+    if [ "$current" = "$latest" ]; then
+        green "  up to date."
+    else
+        say "  upgrade available: $current → $latest"
+    fi
+    exit 0
+fi
+
+# ── confirm ─────────────────────────────────────────────────────────
+if [ "$auto_yes" = 0 ]; then
+    say
+    if [ "$no_pacman" = 0 ]; then
+        say "Will run: yay -Syu --noconfirm (or pacman -Syu if yay missing)"
+    fi
+    if [ "$current" != "$latest" ]; then
+        say "Will fetch nw-omarchy v$latest, run migrations $current → $latest,"
+        say "then re-run install.sh --apply."
+    else
+        say "nw-omarchy already at $current; will only run system package upgrade."
+    fi
+    say
+    read -rp "Proceed? [y/N] " ans
+    case "$ans" in [Yy]*) ;; *) say "Aborted."; exit 1 ;; esac
+fi
+
+# ── 1. system packages ──────────────────────────────────────────────
+if [ "$no_pacman" = 0 ]; then
+    say
+    bold "==> system packages"
+    if command -v yay >/dev/null; then
+        yay -Syu --noconfirm
+    else
+        sudo pacman -Syu --noconfirm
+    fi
+fi
+
+# ── 2. repo upgrade (only if version moved) ─────────────────────────
+if [ "$current" != "$latest" ] && [ "$latest" != 'master' ]; then
+    say
+    bold "==> nw-omarchy v$current → v$latest"
+    [ -d "$REPO_PATH/.git" ] || { say "ERROR: $REPO_PATH is not a git clone"; exit 1; }
+    git -C "$REPO_PATH" fetch --tags
+    git -C "$REPO_PATH" checkout "v$latest"
+
+    # ── 3. migrations ────────────────────────────────────────────
+    say
+    bold "==> migrations"
+    if [ -d "$REPO_PATH/migrations" ]; then
+        # Build sorted (version-aware) list of migration files whose
+        # target version is > current and ≤ latest.
+        for m in $(ls "$REPO_PATH/migrations/"*.sh 2>/dev/null \
+                   | sort -V); do
+            target=$(basename "$m" .sh)
+            # in_range: current < target ≤ latest
+            if [ "$(printf '%s\n%s\n' "$current" "$target" | sort -V | head -1)" = "$current" ] \
+               && [ "$current" != "$target" ] \
+               && [ "$(printf '%s\n%s\n' "$target" "$latest" | sort -V | tail -1)" = "$latest" ]; then
+                say "  → $target"
+                bash "$m"
+            fi
+        done
+    fi
+
+    # ── 4. install.sh --apply ────────────────────────────────────
+    say
+    bold "==> install.sh --apply"
+    "$REPO_PATH/install.sh" --apply
+
+    # ── 5. version stamp ─────────────────────────────────────────
+    echo "$latest" >"$VERSION_FILE"
+    green "==> nw-omarchy now at $latest"
+else
+    say
+    say "==> nw-omarchy unchanged ($current)"
+fi
+
+green "Upgrade complete."

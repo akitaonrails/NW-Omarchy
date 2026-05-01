@@ -2,7 +2,18 @@
 
 This is a **layered** add-on for Omarchy that adds a bspwm/picom login session **alongside** Hyprland. The project's X server target is **XLibre** (a maintained `xorg-server` fork). It must never modify the Omarchy install or break the Hyprland session.
 
-**XLibre framing:** XLibre is supported via the official `[xlibre]` binary repo at `x11libre.net`, whose packages declare proper `provides=('xorg-server' ...)` and do **not** conflict with `xorg-xwayland`. So XLibre coexists with Hyprland (which uses `xorg-xwayland` for X11 client compat). The migration script `bin/nw-omarchy-xlibre-migrate` handles the swap idempotently and is the recommended post-install step. Stock `xorg-server` still works as a fallback (every config in this repo is libxcb/libx11 client-side, not server-side). An earlier note here claimed XLibre and Hyprland were mutually exclusive — that was based on the `-git` AUR package, which lacks the proper `Provides=`; the binary-repo packages don't have that flaw, and this project's user is now running on XLibre.
+**XLibre framing:** XLibre is supported via the official `[xlibre]` binary repo at `x11libre.net`, whose packages declare proper `provides=('xorg-server' ...)` and do **not** conflict with `xorg-xwayland`. So XLibre coexists with Hyprland (which uses `xorg-xwayland` for X11 client compat). The swap is part of the regular `install.sh --apply` pipeline (`install/xlibre.sh`, runs last, idempotent). `bin/nw-omarchy-xlibre-migrate` is a stub kept around for muscle-memory. Stock `xorg-server` still works as a fallback (every config in this repo is libxcb/libx11 client-side, not server-side).
+
+## Versioning, releases, upgrades (post-1.0)
+
+The project tagged 1.0 on 2026-05-01. From this point on:
+
+- **Source of truth** for version is `VERSION` (one-line semver, repo root). It MUST stay in sync with the corresponding `vX.Y.Z` git tag.
+- **Releases** are git tags of the form `vX.Y.Z`. Every release bumps `VERSION` in the same commit that gets tagged. Tag annotations should summarise what changed for users (not a changelog dump — a paragraph).
+- **boot.sh and nw-omarchy-upgrade pin to the latest `v*` tag**, not master. Master is the dev branch; users only land on tagged releases.
+- **Upgrades go through `nw-omarchy-upgrade`**, which runs `yay -Syu` (or `pacman -Syu`), checks out the new tag, runs every `migrations/<target>.sh` between current and latest in version-sort order, runs `install.sh --apply`, then writes the new version to `~/.local/state/nw-omarchy/version`.
+- **Migrations** live in `migrations/<target-version>.sh`. They are for upgrade-specific deltas that the install pipeline can't express idempotently — package replacements pacman can't auto-resolve, file moves, config schema bumps. Write one *only when* `install.sh --apply` alone wouldn't get the user from version N-1 to N. See `migrations/README.md` for conventions (idempotent, self-contained, exit non-zero on failure, comment heavily).
+- **Pre-1.0 leftover replacements** (the `PRE_INSTALL_REMOVE` list in `install/packages.sh`) move to migrations once they apply only to `<v1.0` users — keep them there until you're sure no one has a pre-1.0 install around any longer.
 
 ## The hard rules
 
