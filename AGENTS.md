@@ -1,8 +1,8 @@
 # Agent instructions for nw-omarchy
 
-This is a **layered** add-on for Omarchy that adds a bspwm/picom login session **alongside** Hyprland on stock Xorg. It must never modify the Omarchy install or break the Hyprland session.
+This is a **layered** add-on for Omarchy that adds a bspwm/picom login session **alongside** Hyprland. The project's X server target is **XLibre** (a maintained `xorg-server` fork). It must never modify the Omarchy install or break the Hyprland session.
 
-**XLibre note:** the original target was XLibre as the X server, but `xlibre-xserver-common-git` declares `Conflicts=xorg-server-common` without `Provides=`, and `xorg-xwayland` (required by Hyprland) depends on `xorg-server-common`. So XLibre and Hyprland are mutually exclusive. We use stock Xorg and document the situation. Don't try to "fix" this by replacing xorg-server unless the user explicitly asks for it on a Hyprland-free machine.
+**XLibre framing:** XLibre is supported via the official `[xlibre]` binary repo at `x11libre.net`, whose packages declare proper `provides=('xorg-server' ...)` and do **not** conflict with `xorg-xwayland`. So XLibre coexists with Hyprland (which uses `xorg-xwayland` for X11 client compat). The migration script `bin/nw-omarchy-xlibre-migrate` handles the swap idempotently and is the recommended post-install step. Stock `xorg-server` still works as a fallback (every config in this repo is libxcb/libx11 client-side, not server-side). An earlier note here claimed XLibre and Hyprland were mutually exclusive — that was based on the `-git` AUR package, which lacks the proper `Provides=`; the binary-repo packages don't have that flaw, and this project's user is now running on XLibre.
 
 ## The hard rules
 

@@ -38,7 +38,7 @@ The uninstaller reads `~/.local/state/nw-omarchy/manifest.tsv` and replays it in
 - [gaps.md](gaps.md) — what's at parity vs vanilla omarchy, what's intentionally dropped, what's still worth building
 - [services.md](services.md) — audit of every omarchy systemd unit / hook, with verdict on whether nw-omarchy needs to wire it
 - [clipboard.md](clipboard.md) — what works (`ctrl+c/v/x`, alacritty CLIPBOARD overrides, `super+ctrl+v` history) and why omarchy's `super+c/v/x` synthesis didn't survive the X11 port
-- [xlibre.md](xlibre.md) — opt-in migration from xorg-server to XLibre via `nw-omarchy-xlibre-migrate`
+- [xlibre.md](xlibre.md) — recommended migration from xorg-server to XLibre via `nw-omarchy-xlibre-migrate`
 
 ## Health-checking the install
 
@@ -50,20 +50,21 @@ Lints the live system in eight sections (Packages, Manifest, SDDM picker, Theme 
 
 ## Gotchas worth knowing
 
-### XLibre — opt-in, not auto-installed
+### XLibre is the X server target
 
-bspwm runs on stock `xorg-server` by default. **XLibre is supported as an opt-in replacement** via the binary repo packages from `x11libre.net`, which declare proper `provides=('xorg-server' …)` and don't conflict with `xorg-xwayland` — so a clean swap coexists with omarchy's hyprland session.
+nw-omarchy is **omarchy on XLibre**: a bspwm + picom (FT-Labs) login session, on the maintained `xorg-server` fork. The project ships configs that work on either xorg-server or XLibre (every binding is libxcb/libx11 client-side), but the recommended deployment runs XLibre.
 
-(The historical blocker was specifically the `xlibre-xserver-common-git` AUR package, which declared `Conflicts=xorg-server-common` without the matching `Provides=`. The official `[xlibre]` binary repo packages don't have that flaw.)
+Why not auto-swap during `install.sh`? Replacing the X server is substantially riskier than the rest of the install pipeline (which only touches user configs and the SDDM session entry). Keeping it as a deliberate post-install step lets you decide and lets the rest of the pipeline stay safely re-runnable on a vanilla omarchy box. The migration script is idempotent and self-checks against the current state:
 
-To migrate:
 ```bash
 nw-omarchy-xlibre-migrate            # preview (dry-run)
 nw-omarchy-xlibre-migrate --apply    # commit
+nw-omarchy-xlibre-migrate --revert --apply  # roll back
 ```
-Idempotent. Revert with `--revert --apply`. Full rationale, compatibility matrix, and rollback plan: [docs/xlibre.md](xlibre.md).
 
-`install/xlibre.sh` (run during the regular install pipeline) is diagnostic-only: it just reports whether you've migrated.
+Coexistence with Hyprland: the official `[xlibre]` binary repo packages declare proper `provides=('xorg-server' ...)` and don't conflict with `xorg-xwayland`, so omarchy's hyprland session keeps working with XLibre installed. (An earlier blocker was specifically the `xlibre-xserver-common-git` AUR package, which declared `Conflicts=xorg-server-common` without the matching `Provides=`. The binary-repo packages don't have that flaw.)
+
+Full rationale, compatibility matrix, and rollback plan: [docs/xlibre.md](xlibre.md). `install/xlibre.sh` (run during the regular install pipeline) is diagnostic-only — it just reports the current X server.
 
 ### picom-FT-Labs animations syntax has drifted
 

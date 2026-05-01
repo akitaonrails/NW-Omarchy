@@ -1,10 +1,10 @@
 # nw-omarchy
 
-A secondary login option for Omarchy: **bspwm + picom (FT-Labs)** on Xorg, layered on top of an existing Omarchy install. Ports as much of the Hyprland look-and-feel and keybindings as the X11 stack allows.
+A secondary login option for Omarchy: **bspwm + picom (FT-Labs) on XLibre**, layered on top of an existing Omarchy install. Ports as much of the Hyprland look-and-feel and keybindings as the X11 stack allows, on a maintained X server.
 
 > "Not Wayland Omarchy." Sits parallel to Hyprland — your Omarchy session is untouched.
 
-XLibre is supported as an opt-in X server replacement (see [docs/xlibre.md](docs/xlibre.md)) via the binary repo at `x11libre.net`, which coexists cleanly with omarchy's hyprland. The default install leaves `xorg-server` in place; run `nw-omarchy-xlibre-migrate --apply` to swap.
+XLibre is the project's X server target (a maintained `xorg-server` fork). It coexists cleanly with omarchy's hyprland — the install pipeline does not swap your X server automatically because the operation is risky enough to warrant a deliberate confirmation step; run `nw-omarchy-xlibre-migrate --apply` after `install.sh --apply` to swap. Stock `xorg-server` still works as a fallback if you'd rather skip the migration. See [docs/xlibre.md](docs/xlibre.md) for the full story.
 
 ## What this is not
 
@@ -16,8 +16,12 @@ XLibre is supported as an opt-in X server replacement (see [docs/xlibre.md](docs
 
 ```bash
 cd ~/.local/share/nw-omarchy
-./install.sh           # dry-run by default; prints what it would do
-./install.sh --apply   # actually install
+./install.sh                          # dry-run by default; prints what it would do
+./install.sh --apply                  # install bspwm/picom/polybar/sxhkd/rofi configs
+
+# recommended: swap xorg-server for XLibre (idempotent; reboot after)
+nw-omarchy-xlibre-migrate             # preview
+nw-omarchy-xlibre-migrate --apply     # commit
 ```
 
 Pick `nw-bspwm` from the SDDM session selector on next login.
