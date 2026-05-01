@@ -84,9 +84,14 @@ if echo "$gpu" | grep -qi nvidia; then
 fi
 
 # ── already-migrated short-circuit ───────────────────────────────────
+# NB: `pacman -Q xorg-server` returns success even when xlibre-xserver
+# is the actual installed package, because xlibre-xserver declares
+# provides=('xorg-server' ...) and pacman matches that. Match the local
+# package list literally to avoid the false positive.
+pkg_installed() { pacman -Q 2>/dev/null | awk -v p="$1" '$1==p {f=1} END{exit !f}'; }
 have_xlibre=0; have_xorg=0
-pacman -Qq xlibre-xserver >/dev/null 2>&1 && have_xlibre=1
-pacman -Qq xorg-server    >/dev/null 2>&1 && have_xorg=1
+pkg_installed xlibre-xserver && have_xlibre=1
+pkg_installed xorg-server    && have_xorg=1
 
 if [ "$revert" = 0 ] && [ "$have_xlibre" = 1 ] && [ "$have_xorg" = 0 ]; then
     say "Already on XLibre — nothing to do."
@@ -183,14 +188,14 @@ sudo pacman -S --needed "${to_install[@]}"
 # ── verify ───────────────────────────────────────────────────────────
 say
 if [ "$revert" = 0 ]; then
-    if pacman -Qq xlibre-xserver >/dev/null 2>&1 && ! pacman -Qq xorg-server >/dev/null 2>&1; then
+    if pkg_installed xlibre-xserver && ! pkg_installed xorg-server; then
         say "✓ Now on XLibre — reboot recommended."
         say "  Revert later with: nw-omarchy-xlibre-migrate --revert --apply"
     else
         say "✗ Verification failed: xorg-server still present after swap"; exit 1
     fi
 else
-    if pacman -Qq xorg-server >/dev/null 2>&1 && ! pacman -Qq xlibre-xserver >/dev/null 2>&1; then
+    if pkg_installed xorg-server && ! pkg_installed xlibre-xserver; then
         say "✓ Reverted to xorg-server — reboot recommended."
         say "  The [xlibre] repo and signing key remain in place; remove manually if desired."
     else
