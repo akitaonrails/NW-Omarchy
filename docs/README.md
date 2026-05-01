@@ -40,6 +40,7 @@ The uninstaller reads `~/.local/state/nw-omarchy/manifest.tsv` and replays it in
 - [clipboard.md](clipboard.md) — what works (`ctrl+c/v/x`, alacritty CLIPBOARD overrides, `super+ctrl+v` history) and why omarchy's `super+c/v/x` synthesis didn't survive the X11 port
 - [why-xlibre.md](why-xlibre.md) — what XLibre is, why we chose it, what we materially gain by staying on X11, what we lose vs Hypr/Wayland
 - [xlibre.md](xlibre.md) — what the install pipeline does for the X server swap, compatibility matrix, revert recipe
+- [future.md](future.md) — design notes for the deferred items in `gaps.md` (direction-aware animation, pop-out, scratchpad)
 
 ## Health-checking the install
 

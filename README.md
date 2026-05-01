@@ -12,6 +12,20 @@ XLibre is the project's X server target (a maintained `xorg-server` fork). It co
 - A fork. Nothing under `~/.local/share/omarchy/` is modified.
 - Magic. Wayland-only features (real GPU compositing, native fractional scaling) don't come back; we approximate.
 
+## Quick install (one-liner)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/akitaonrails/NW-Omarchy/master/boot.sh | bash
+```
+
+Pre-flights Arch + omarchy + git, clones to `~/.local/share/nw-omarchy`, and runs the full install pipeline (bspwm session + picom v13 + XLibre swap). Asks for confirmation once before touching anything; pass `--yes` to skip:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/akitaonrails/NW-Omarchy/master/boot.sh | bash -s -- --yes
+```
+
+Reboot when it finishes, then pick `nw-bspwm` from the SDDM session selector.
+
 ## Bootstrap (from a clone)
 
 ```bash

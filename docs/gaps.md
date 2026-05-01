@@ -66,12 +66,13 @@ Wayland-only or out-of-scope, with no useful X11 cousin in our stack:
 
 ## Gaps worth filling 🔨
 
-What's still open and worth picking up. Ordered by effort × value:
+Open work, deferred until use exposes which actually matters. Full design notes for each in [`future.md`](future.md):
 
 | # | Gap | Effort | Notes |
 |---:|---|---|---|
-| 1 | **Direction-aware workspace animation** | ~3 h | With the picom v13 rules-block migration done (see "At parity"), per-window animations are suppressible — slop/rofi/dunst could opt out while regular windows opt in. The remaining piece is a `bspc subscribe desktop_focus` daemon that detects forward/backward and swaps which animation rule fires. |
-| 2 | **Pop-out / scratchpad** if you actually use them | ~1 h each | `super + o` and `super + s` from omarchy v2 — not core to bspwm's model but doable with `bspc node -g sticky=on, hidden=on` plus a state file. |
+| 1 | **Direction-aware workspace animation** | ~2-3 h | Wrap bspc desktop switching with a script that picks `picom.forward.conf` / `picom.backward.conf` and SIGUSR1-reloads picom. Small race-window caveat. See [`future.md`](future.md). |
+| 2 | **Pop-out window** (`super + o`) | ~30 min | bspwm `floating + sticky + layer=above` toggle, state file per window. See [`future.md`](future.md). |
+| 3 | **Scratchpad** (`super + s`) | ~30 min – 2 h | Two flavors documented in [`future.md`](future.md): workspace-style (cheap, glorified super+9) or window-stash style (matches hypr UX, has edge cases). |
 
 ### Pre-1.0: no migration tool
 
