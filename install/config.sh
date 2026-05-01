@@ -63,6 +63,18 @@ write_shim() {
 
 DEFAULT="$NW_OMARCHY_PATH/default"
 
+# Screenshots go into $XDG_PICTURES_DIR/Screenshots (or ~/Pictures/Screenshots
+# if XDG_PICTURES_DIR isn't set). Pre-create so the directory exists from
+# day one, instead of springing into existence on the user's first Print.
+echo "==> screenshot directory"
+[ -f ~/.config/user-dirs.dirs ] && . ~/.config/user-dirs.dirs
+SHOTS="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
+if [ -d "$SHOTS" ]; then
+    echo "  already exists: $SHOTS"
+else
+    run mkdir -p "$SHOTS"
+fi
+
 echo "==> bspwm shim"
 write_shim "$HOME/.config/bspwm/bspwmrc" <<EOF
 #!/bin/sh
