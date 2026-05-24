@@ -55,15 +55,27 @@ else
     bad "/usr/share/sddm/themes/nw-omarchy/Main.qml missing — nw-omarchy-sddm-picker enable"
 fi
 
-if [ -f /etc/sddm.conf.d/20-nw-omarchy.conf ]; then
-    cur=$(awk -F= '/^[[:space:]]*Current=/ {gsub(/[ \t]/, "", $2); print $2}' /etc/sddm.conf.d/20-nw-omarchy.conf)
-    if [ "$cur" = "nw-omarchy" ]; then
-        ok "[Theme] Current=nw-omarchy in /etc/sddm.conf.d/20-nw-omarchy.conf"
-    else
-        info "/etc/sddm.conf.d/20-nw-omarchy.conf has Current=${cur:-(empty)}"
-    fi
+if [ -f /etc/sddm.conf.d/zz-nw-omarchy.conf ]; then
+    ok "/etc/sddm.conf.d/zz-nw-omarchy.conf present"
 else
-    bad "/etc/sddm.conf.d/20-nw-omarchy.conf missing"
+    bad "/etc/sddm.conf.d/zz-nw-omarchy.conf missing — nw-omarchy-sddm-picker enable"
+fi
+if [ -f /etc/sddm.conf.d/20-nw-omarchy.conf ]; then
+    info "stale /etc/sddm.conf.d/20-nw-omarchy.conf present (pre-fix name) — re-run install to remove"
+fi
+# What SDDM actually resolves [Theme] Current= to is the LAST writer across
+# conf.d/*.conf (lexical order). That's the real signal — our file losing to a
+# later one (e.g. autologin.conf) is the bug that hides the picker.
+eff=""
+for f in $(printf '%s\n' /etc/sddm.conf.d/*.conf | sort); do
+    [ -f "$f" ] || continue
+    c=$(awk '/^\[Theme\]/{t=1;next} /^\[/{t=0} t && /^[[:space:]]*Current=/{gsub(/[ \t]/,"",$0); sub(/^Current=/,""); v=$0} END{print v}' "$f")
+    [ -n "$c" ] && eff="$c"
+done
+if [ "$eff" = "nw-omarchy" ]; then
+    ok "effective [Theme] Current=nw-omarchy (the picker theme wins the conf.d merge)"
+else
+    bad "effective [Theme] Current=${eff:-(unset)} — picker theme is overridden; a conf.d file sorts after zz-nw-omarchy.conf"
 fi
 
 # Any conf in /etc/sddm.conf.d/ (any extension!) that still triggers autologin

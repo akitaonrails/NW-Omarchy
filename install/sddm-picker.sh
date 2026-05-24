@@ -6,7 +6,8 @@
 #   1. Copy every file from /usr/share/sddm/themes/omarchy/ into
 #      /usr/share/sddm/themes/nw-omarchy/ (so we inherit logo.svg etc).
 #   2. Override Main.qml + metadata.desktop with our patched copies.
-#   3. Drop /etc/sddm.conf.d/20-nw-omarchy.conf with [Theme] Current=nw-omarchy.
+#   3. Drop /etc/sddm.conf.d/zz-nw-omarchy.conf with [Theme] Current=nw-omarchy
+#      (zz- so it sorts last and wins the conf.d merge over omarchy's autologin.conf).
 #
 # Idempotent. Records every file/dir in the manifest so uninstall replays cleanly.
 #
@@ -22,11 +23,17 @@ set -euo pipefail
 
 OMARCHY_THEME="/usr/share/sddm/themes/omarchy"
 OUR_THEME_DIR="/usr/share/sddm/themes/nw-omarchy"
-OUR_CONF="/etc/sddm.conf.d/20-nw-omarchy.conf"
+# Must sort LAST in /etc/sddm.conf.d/ so our [Theme] Current= wins the
+# last-writer merge. Omarchy ships a non-prefixed `autologin.conf` carrying
+# `[Theme] Current=omarchy`; a numeric prefix (20-) sorts BEFORE it ('2' < 'a')
+# and loses, so the picker theme never loads. 'zz-' sorts after any digit or
+# the bare `autologin` name. See docs/sddm-picker.md.
+OUR_CONF="/etc/sddm.conf.d/zz-nw-omarchy.conf"
+STALE_CONF="/etc/sddm.conf.d/20-nw-omarchy.conf"   # pre-fix name; removed below
 
 SRC_QML="$NW_OMARCHY_PATH/default/sddm-theme/Main.qml"
 SRC_META="$NW_OMARCHY_PATH/default/sddm-theme/metadata.desktop"
-SRC_CONF="$NW_OMARCHY_PATH/default/sddm-conf/20-nw-omarchy.conf"
+SRC_CONF="$NW_OMARCHY_PATH/default/sddm-conf/zz-nw-omarchy.conf"
 
 [ -d "$OMARCHY_THEME" ] || { echo "sddm-picker: $OMARCHY_THEME missing — is omarchy installed?" >&2; exit 1; }
 [ -f "$SRC_QML" ]  || { echo "missing $SRC_QML"  >&2; exit 1; }
@@ -81,6 +88,14 @@ echo "==> overlay our patched Main.qml + metadata.desktop"
 install_theme_file "$SRC_QML"  "$OUR_THEME_DIR/Main.qml"
 install_theme_file "$SRC_META" "$OUR_THEME_DIR/metadata.desktop"
 
+# Remove the pre-fix 20-nw-omarchy.conf from older installs. It sorts before
+# omarchy's autologin.conf and lost the [Theme] merge — leaving it behind would
+# do no harm now (zz- wins) but it's dead state, so converge by deleting it.
+if [ -e "$STALE_CONF" ]; then
+    echo "==> removing stale conf from a previous install: $STALE_CONF"
+    run sudo rm -f "$STALE_CONF"
+fi
+
 echo "==> drop SDDM conf override: $OUR_CONF"
 if [ -f "$OUR_CONF" ] && cmp -s "$SRC_CONF" "$OUR_CONF"; then
     echo "  up-to-date: $OUR_CONF"
@@ -89,7 +104,7 @@ else
     BACKUP="-"
     if [ -e "$OUR_CONF" ]; then
         ts="$(date +%Y%m%d-%H%M%S)"
-        BACKUP="$NW_OMARCHY_STATE/backups/etc_sddm.conf.d_20-nw-omarchy.conf.$ts"
+        BACKUP="$NW_OMARCHY_STATE/backups/etc_sddm.conf.d_zz-nw-omarchy.conf.$ts"
         mkdir -p "$NW_OMARCHY_STATE/backups"
         run sudo cp -a "$OUR_CONF" "$BACKUP"
     fi
@@ -101,17 +116,51 @@ echo
 echo "sddm-picker: done. The picker takes effect next time SDDM (re)starts the greeter."
 echo "             Try:  sudo systemctl restart sddm   (this kills the current X session)"
 
-# Soft-warn if any file in /etc/sddm.conf.d/ declares an autologin user.
-# SDDM parses every file in that dir regardless of extension, so a `.disabled`
-# rename does NOT stop autologin or its [Theme] Current= from taking effect.
+# ── autologin guard ──────────────────────────────────────────────────
+# An active [Autologin] User= makes SDDM skip the greeter entirely — no theme,
+# no picker, no way to reach nw-bspwm. Our zz- theme override is irrelevant
+# while that's set. Offer to move the file OUT of /etc/sddm.conf.d/ (a
+# `.disabled` rename in-place is not enough — SDDM parses every file in that
+# dir regardless of extension). The move is recorded in the manifest as a
+# `file` action with the new location as its backup, so uninstall restores it.
+AUTOLOGIN_FILE=""
 for f in /etc/sddm.conf.d/*; do
     [ -f "$f" ] || continue
     if awk '/^\[Autologin\]/{inauto=1; next} /^\[/{inauto=0} inauto && /^User=.+/{found=1} END{exit !found}' "$f"; then
-        echo
-        echo "             ⚠  $f declares [Autologin] User=… — SDDM will skip the greeter."
-        echo "                Renaming to .disabled is NOT enough — SDDM parses every file in that dir."
-        echo "                Move it out of /etc/sddm.conf.d/ entirely:"
-        echo "                    sudo mv $f /etc/sddm-autologin.conf.disabled"
+        AUTOLOGIN_FILE="$f"
         break
     fi
 done
+
+if [ -n "$AUTOLOGIN_FILE" ]; then
+    DISABLED_DST="/etc/sddm-autologin.conf.disabled"
+    [ -e "$DISABLED_DST" ] && DISABLED_DST="${DISABLED_DST}.$(date +%Y%m%d-%H%M%S)"
+    echo
+    echo "⚠  $AUTOLOGIN_FILE declares [Autologin] User=… — SDDM will skip the greeter,"
+    echo "   so you will never see the session picker or the nw-bspwm option."
+
+    if [ "$DRY_RUN" = "1" ]; then
+        echo "   [dry] --apply would offer to move it to $DISABLED_DST (reversible on uninstall)."
+    else
+        # Read the choice from the controlling terminal. The pipeline's stdin may
+        # be a pipe (curl|bash reattaches /dev/tty); fall back to "no" if neither
+        # is interactive so an unattended run never silently disables autologin.
+        ans=""
+        if [ -r /dev/tty ]; then
+            read -rp "   Move it aside now so the greeter shows? [y/N] " ans </dev/tty || ans=""
+        elif [ -t 0 ]; then
+            read -rp "   Move it aside now so the greeter shows? [y/N] " ans || ans=""
+        fi
+        case "$ans" in
+            [Yy]*)
+                run sudo mv "$AUTOLOGIN_FILE" "$DISABLED_DST"
+                run nw-omarchy-track record file "$AUTOLOGIN_FILE" "$DISABLED_DST"
+                echo "   moved → $DISABLED_DST (uninstall will move it back)"
+                ;;
+            *)
+                echo "   left in place. To enable the picker later, move it out yourself:"
+                echo "       sudo mv $AUTOLOGIN_FILE $DISABLED_DST"
+                ;;
+        esac
+    fi
+fi

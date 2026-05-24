@@ -75,6 +75,20 @@ if ! command -v git >/dev/null; then
 fi
 
 # ── confirm ─────────────────────────────────────────────────────────
+# By here we've tried to reattach stdin to /dev/tty (above). If that failed —
+# piped from curl with no controlling terminal (some SSH/console/CI setups) —
+# `read` would silently hit EOF and we'd abort with a bare "Aborted." that
+# looks like the script is broken. Detect it and tell the user what to do.
+if [ "$auto_yes" = 0 ] && [ ! -t 0 ]; then
+    red "ERROR: no interactive terminal to confirm on (stdin is not a TTY)."
+    echo "       This happens when the one-liner is piped in a context without a"
+    echo "       controlling terminal. Either run it non-interactively:"
+    echo "         curl -fsSL https://raw.githubusercontent.com/akitaonrails/NW-Omarchy/master/boot.sh | bash -s -- --yes"
+    echo "       or download first, then run:"
+    echo "         curl -fsSL https://raw.githubusercontent.com/akitaonrails/NW-Omarchy/master/boot.sh -o boot.sh && bash boot.sh"
+    exit 1
+fi
+
 if [ "$auto_yes" = 0 ]; then
     cat <<EOF
 This will:

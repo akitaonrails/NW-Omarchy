@@ -41,8 +41,9 @@ XLibre is the last step of the regular install pipeline (`install/xlibre.sh`, ru
 1. Trust XLibre signing key `73580DE2EDDFA6D6` (skip if trusted)
 2. Append `[xlibre]` repo to `/etc/pacman.conf` (skip if present)
 3. `pacman -Sy`
-4. Compute swap set from currently-installed `xorg-*` / `xf86-*` packages
-5. Single `pacman -S --needed` invocation — provides/conflicts handle the xorg-server removal natively, no manual `-R`
+4. Compute the install set from installed `xorg-*` / `xf86-*` packages — or, if no `xorg-server` is present (a Wayland-only omarchy), install XLibre fresh so the bspwm session has an X server at all
+5. Validate every computed target against the synced repo, dropping any with no build (one missing target aborts the *whole* `pacman -S`, which would leave xorg-server in place)
+6. Install via `yes | pacman -S --needed` (**not** `--noconfirm`). `xlibre-xserver` declares both `conflicts=` and `provides=` for `xorg-server`, but `--noconfirm` answers the resulting "Remove xorg-server? [y/N]" prompt with the default *No* and aborts with "unresolvable package conflicts". Feeding `yes` resolves the conflict atomically in one transaction.
 
 Idempotent: re-running `install.sh --apply` on a fully-migrated system is a no-op. After it finishes: **reboot**. The running X session is still using the old binary; the swapped files only take effect on next session start.
 
@@ -56,7 +57,7 @@ Manual until the migrate tool grows up post-1.0:
 sudo pacman -S xorg-server xorg-server-common xf86-input-libinput
 ```
 
-Pacman's provides/conflicts logic swaps the xlibre packages back out. The `[xlibre]` repo entry and signing key are left in place — remove manually if desired:
+Pacman prompts "Remove xlibre-xserver? [y/N]" to resolve the conflict — answer **y** (the command above is interactive, so it waits for you). The `[xlibre]` repo entry and signing key are left in place — remove manually if desired:
 ```bash
 sudo sed -i '/^\[xlibre\]/,/^$/d' /etc/pacman.conf
 sudo pacman-key --delete 73580DE2EDDFA6D6

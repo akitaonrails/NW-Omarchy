@@ -17,7 +17,8 @@ export NW_OMARCHY_PATH NW_OMARCHY_STATE
 export PATH="$NW_OMARCHY_PATH/bin:$PATH"
 
 OUR_THEME_DIR="/usr/share/sddm/themes/nw-omarchy"
-OUR_CONF="/etc/sddm.conf.d/20-nw-omarchy.conf"
+OUR_CONF="/etc/sddm.conf.d/zz-nw-omarchy.conf"          # sorts last → wins the [Theme] merge
+STALE_CONF="/etc/sddm.conf.d/20-nw-omarchy.conf"        # pre-fix name from older installs
 
 usage() {
     cat >&2 <<EOF
@@ -78,6 +79,9 @@ case "$ACTION" in
         else
             echo "  not present: $OUR_CONF"
         fi
+        if [ -e "$STALE_CONF" ]; then
+            run sudo rm -f "$STALE_CONF"
+        fi
         if [ -d "$OUR_THEME_DIR" ]; then
             run sudo rm -rf "$OUR_THEME_DIR"
         else
@@ -118,8 +122,8 @@ case "$ACTION" in
         echo
         echo "── /etc/sddm.conf.d/ files (SDDM reads ALL of them) ─────"
         # SDDM doesn't filter by extension — every file in conf.d/ is parsed.
-        # Our 20-nw-omarchy.conf can be silently overridden by anything that
-        # sorts after it (e.g. autologin.conf.disabled) and declares [Theme] Current=.
+        # Our zz-nw-omarchy.conf is named to sort LAST so its [Theme] Current=
+        # wins; anything sorting after it (a stray zz*/~ file) would still win.
         for f in /etc/sddm.conf.d/*; do
             [ -f "$f" ] || continue
             cur="$(awk '/^\[Theme\]/{intheme=1; next} /^\[/{intheme=0} intheme && /^Current=/{print substr($0,9)}' "$f")"

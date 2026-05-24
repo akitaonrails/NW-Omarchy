@@ -10,9 +10,14 @@
 # Pipeline:
 #   1. Trust the XLibre signing key (skip if already trusted)
 #   2. Add the [xlibre] repo to /etc/pacman.conf (skip if present)
-#   3. Compute swap set from currently-installed xorg/xf86 packages
-#   4. pacman -S the xlibre equivalents in one transaction (provides/replaces
-#      handle the xorg-server removal natively — no manual -R needed)
+#   3. Compute swap set from currently-installed xorg/xf86 packages, dropping
+#      any target with no build in the repo (a single missing target would
+#      otherwise abort the whole transaction)
+#   4. Install the xlibre equivalents. xlibre-xserver declares conflicts=
+#      AND provides= for xorg-server, but `pacman --noconfirm` answers the
+#      "Remove xorg-server? [y/N]" conflict prompt with the default *No* and
+#      aborts — so we feed `yes` to a non-noconfirm pacman to resolve the
+#      conflict atomically (verified against the live xlibre repo).
 
 set -euo pipefail
 
@@ -83,9 +88,20 @@ fi
 
 run sudo pacman -Sy
 
-# ── compute swap set ─────────────────────────────────────────────────
-declare -a to_install=()
-[ "$have_xorg" = 1 ] && to_install+=(xlibre-xserver xlibre-xserver-common)
+# ── compute install set ──────────────────────────────────────────────
+declare -a to_install=(xlibre-xserver xlibre-xserver-common)
+if [ "$have_xorg" = 1 ]; then
+    say "→ swapping existing xorg-server → XLibre"
+else
+    # Omarchy is Wayland-first and may ship no xorg-server at all (only
+    # xorg-xwayland). nw-omarchy's bspwm session still needs a real X server,
+    # so install XLibre fresh rather than no-op'ing. The libinput driver plus
+    # the modesetting DDX bundled inside xlibre-xserver cover common hardware.
+    say "→ no xorg-server present — installing XLibre fresh (bspwm needs an X server)"
+    to_install+=(xlibre-input-libinput)
+fi
+
+# Map any installed xf86 drivers to their xlibre equivalents.
 while read -r p; do
     case "$p" in
         xf86-input-*)        to_install+=("xlibre-input-${p#xf86-input-}") ;;
@@ -97,21 +113,76 @@ while read -r p; do
     esac
 done < <(pacman -Qq 2>/dev/null)
 
-if [ "${#to_install[@]}" = 0 ]; then
-    say "xlibre: nothing to swap (no xorg/xf86 packages installed)"
+mapfile -t to_install < <(printf '%s\n' "${to_install[@]}" | awk '!seen[$0]++')
+
+# Dry-run can't validate against the repo (we didn't really `pacman -Sy`), so
+# just preview the computed set and the transaction, then stop.
+if [ "$DRY_RUN" = "1" ]; then
+    say "[dry] computed install set: ${to_install[*]}"
+    run sudo pacman -S --needed --noconfirm "${to_install[@]}"
+    say "[dry] (target validation + xf86 cleanup happen only on --apply)"
     exit 0
 fi
 
-mapfile -t to_install < <(printf '%s\n' "${to_install[@]}" | awk '!seen[$0]++')
+# ── validate every target against the synced repo ─────────────────────
+# A single nonexistent target (e.g. an exotic xf86 driver with no xlibre
+# build) makes `pacman -S a b c` abort the WHOLE transaction with
+# "target not found" — leaving xorg-server un-swapped. That's the failure
+# reported in issue #1. Partition instead: install what exists, and for a
+# driver with no xlibre build, remove the now-ABI-incompatible xf86 original
+# so it can't block the server swap (the bundled modesetting DDX covers it).
+declare -a available=() to_remove=()
+for t in "${to_install[@]}"; do
+    if pacman -Si "$t" >/dev/null 2>&1; then
+        available+=("$t")
+    else
+        say "⚠ no repo package '$t'"
+        case "$t" in
+            xlibre-input-*) old="xf86-input-${t#xlibre-input-}" ;;
+            xlibre-video-*) old="xf86-video-${t#xlibre-video-}" ;;
+            *)              old="" ;;
+        esac
+        if [ -n "$old" ] && pkg_installed "$old"; then
+            say "  → will remove ABI-incompatible $old (xlibre's modesetting DDX covers it)"
+            to_remove+=("$old")
+        fi
+    fi
+done
 
-say "→ swap set: ${to_install[*]}"
-run sudo pacman -S --needed --noconfirm "${to_install[@]}"
+if [ "${#available[@]}" = 0 ]; then
+    say "✗ no installable XLibre targets found in the repo — aborting"; exit 1
+fi
+
+# Remove ABI-orphaned xf86 drivers first. They have no xlibre build and are
+# incompatible with the new server ABI; leaving them installed makes the
+# `-S` below fail dependency resolution. -Rdd: they're leaf packages, but
+# skip dep checks to be safe against the in-flight server swap.
+if [ "${#to_remove[@]}" -gt 0 ]; then
+    say "→ removing ABI-orphaned xf86 drivers: ${to_remove[*]}"
+    run sudo pacman -Rdd --noconfirm "${to_remove[@]}"
+fi
+
+say "→ install set: ${available[*]}"
+# NOT --noconfirm: that answers the "Remove xorg-server?" conflict prompt with
+# the default No and aborts. Feed `yes` to a confirming pacman so the conflict
+# (xlibre-xserver vs xorg-server, etc.) is resolved atomically in one txn.
+# `yes` is killed by SIGPIPE when pacman exits, so read pacman's real status
+# from PIPESTATUS rather than letting pipefail surface yes's 141.
+printf '+ yes | '; printf '%q ' sudo pacman -S --needed "${available[@]}"; printf '\n'
+set +o pipefail
+yes 2>/dev/null | sudo pacman -S --needed "${available[@]}"
+rc=${PIPESTATUS[1]}
+set -o pipefail
+if [ "$rc" -ne 0 ]; then
+    say "✗ XLibre install transaction failed (pacman exit $rc)"
+    exit 1
+fi
 
 # ── verify ───────────────────────────────────────────────────────────
-if [ "$DRY_RUN" != "1" ]; then
-    if pkg_installed xlibre-xserver && ! pkg_installed xorg-server; then
-        say "✓ on XLibre — reboot recommended"
-    else
-        say "✗ verification failed: xorg-server still present after swap"; exit 1
-    fi
+# xlibre-xserver must be present and xorg-server gone (its conflicts= forced
+# removal). On a fresh install xorg-server was never there — also fine.
+if pkg_installed xlibre-xserver && ! pkg_installed xorg-server; then
+    say "✓ on XLibre — reboot recommended"
+else
+    say "✗ verification failed: xorg-server still present after swap"; exit 1
 fi
