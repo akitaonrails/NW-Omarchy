@@ -23,12 +23,22 @@ info()    { printf '  %s[-]%s    %s\n' "$C_INFO" "$C_RST" "$*"; }
 
 #─── Packages ────────────────────────────────────────────────────────
 section "Packages"
-EXPECTED_PKGS=(
-    bspwm sxhkd polybar rofi dunst feh
-    xdotool xclip wmctrl clipmenu xss-lock maim slop
-    network-manager-applet blueman pasystray
-    i3lock-color picom-ftlabs-git libinput-gestures-git
-)
+EXPECTED_PKGS=()
+PKGFILE="$NW_OMARCHY_PATH/packages/nw-omarchy.packages"
+if [ -f "$PKGFILE" ]; then
+    while IFS= read -r line; do
+        line="${line%%#*}"
+        line="${line//$'\t'/ }"
+        line="$(echo "$line" | xargs)"
+        [ -z "$line" ] && continue
+        if [[ "$line" == *"(aur)"* ]]; then
+            line="$(echo "${line%%(aur)*}" | xargs)"
+        fi
+        EXPECTED_PKGS+=("$line")
+    done < "$PKGFILE"
+else
+    bad "$PKGFILE missing — cannot check package set"
+fi
 for p in "${EXPECTED_PKGS[@]}"; do
     if pacman -Qq "$p" >/dev/null 2>&1; then
         ok "$p"

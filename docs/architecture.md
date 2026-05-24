@@ -21,13 +21,17 @@ This is the same pattern Omarchy uses for hypr/bash. The shims are the only file
 
 ## Install pipeline
 
-`install.sh` → `bin/nw-omarchy-install` → `install/all.sh` runs five steps in order:
+`install.sh` → `bin/nw-omarchy-install` → `install/all.sh` runs these steps in order:
 
 1. **preflight.sh** — sanity checks (Arch, Omarchy present, AUR helper, sudo, not in nw-bspwm session).
 2. **packages.sh** — install repo + AUR packages from `packages/nw-omarchy.packages`. For each: classify as `pkg` (we installed) or `pkg-skip` (was pre-existing) and record.
-3. **xlibre.sh** — diagnostic for the XLibre AUR package; surfaces fallbacks if the primary name fails to build.
-4. **session.sh** — install `/usr/share/xsessions/nw-bspwm.desktop` (with backup if one already exists at that path).
+3. **session.sh** — ensure `/usr/share/xsessions/` exists, then install `/usr/share/xsessions/nw-bspwm.desktop` (with backup if one already exists at that path).
+4. **sddm-picker.sh** — install the `nw-omarchy` SDDM theme and `zz-nw-omarchy.conf` override.
 5. **config.sh** — write the user-side shim files in `~/.config`. Each shim recorded in the manifest as `file` with backup if displaced.
+6. **themed.sh** — wire nw-omarchy templates into Omarchy's theme refresh flow.
+7. **gestures.sh** — configure libinput gestures for the X11 session.
+8. **alacritty.sh** — import the nw-omarchy terminal keybindings.
+9. **xlibre.sh** — add the official `[xlibre]` binary repo and install or swap to XLibre last.
 
 Every step honours `$DRY_RUN`. With `DRY_RUN=1` (the default), commands are printed with a `[dry]` prefix and never run.
 

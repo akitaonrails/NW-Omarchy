@@ -10,6 +10,7 @@ set -euo pipefail
 
 SRC="$NW_OMARCHY_PATH/default/xsessions/nw-bspwm.desktop"
 DST="/usr/share/xsessions/nw-bspwm.desktop"
+DST_DIR="${DST%/*}"
 
 [ -f "$SRC" ] || { echo "missing source $SRC" >&2; exit 1; }
 
@@ -23,6 +24,12 @@ run() {
 }
 
 # Idempotent
+if [ ! -d "$DST_DIR" ]; then
+    echo "session: creating $DST_DIR"
+    run sudo install -d -m 0755 "$DST_DIR"
+    run nw-omarchy-track record dir "$DST_DIR"
+fi
+
 if [ -f "$DST" ] && cmp -s "$SRC" "$DST"; then
     echo "session: $DST already up to date"
     run nw-omarchy-track record xsession "$DST"
@@ -34,6 +41,7 @@ BACKUP="-"
 if [ -e "$DST" ]; then
     ts="$(date +%Y%m%d-%H%M%S)"
     BACKUP="$NW_OMARCHY_STATE/backups/usr_share_xsessions_nw-bspwm.desktop.$ts"
+    mkdir -p "$NW_OMARCHY_STATE/backups"
     run sudo cp -a "$DST" "$BACKUP"
 fi
 

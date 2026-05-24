@@ -56,17 +56,15 @@ Lints the live system in eight sections (Packages, Manifest, SDDM picker, Theme 
 
 nw-omarchy is **omarchy on XLibre**: a bspwm + picom v13 login session, on the maintained `xorg-server` fork. The project ships configs that work on either xorg-server or XLibre (every binding is libxcb/libx11 client-side), but the recommended deployment runs XLibre.
 
-Why not auto-swap during `install.sh`? Replacing the X server is substantially riskier than the rest of the install pipeline (which only touches user configs and the SDDM session entry). Keeping it as a deliberate post-install step lets you decide and lets the rest of the pipeline stay safely re-runnable on a vanilla omarchy box. The migration script is idempotent and self-checks against the current state:
+`install.sh --apply` performs the XLibre setup as the final install step. It adds the official `[xlibre]` binary repo, installs XLibre fresh on Wayland-only Omarchy installs, or swaps an existing `xorg-server` install in one pacman transaction. The old migration command is a no-op kept for muscle memory:
 
 ```bash
-nw-omarchy-xlibre-migrate            # preview (dry-run)
-nw-omarchy-xlibre-migrate --apply    # commit
-nw-omarchy-xlibre-migrate --revert --apply  # roll back
+nw-omarchy-xlibre-migrate
 ```
 
 Coexistence with Hyprland: the official `[xlibre]` binary repo packages declare proper `provides=('xorg-server' ...)` and don't conflict with `xorg-xwayland`, so omarchy's hyprland session keeps working with XLibre installed. (An earlier blocker was specifically the `xlibre-xserver-common-git` AUR package, which declared `Conflicts=xorg-server-common` without the matching `Provides=`. The binary-repo packages don't have that flaw.)
 
-Full rationale, compatibility matrix, and rollback plan: [docs/xlibre.md](xlibre.md). `install/xlibre.sh` (run during the regular install pipeline) is diagnostic-only — it just reports the current X server.
+Full rationale, compatibility matrix, and rollback plan: [docs/xlibre.md](xlibre.md). `install/xlibre.sh` runs during the regular install pipeline and is idempotent.
 
 ### Compositor: upstream picom v13 (not a fork)
 
